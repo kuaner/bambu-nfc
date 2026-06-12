@@ -59,6 +59,10 @@ const en: Record<string, string> = {
   'update.desc': 'A new version is ready to install',
   'update.button': 'Update',
 
+  // unsupported
+  'unsupported.title': 'Unsupported Device',
+  'unsupported.desc': 'This tool requires the Web Bluetooth API, which is only available on Chrome / Edge desktop browsers. Mobile browsers are not supported.',
+
   // disclaimer
   'disclaimer': 'For research purposes only.<br>All tag data and trademarks belong to Bambu Lab.',
 }

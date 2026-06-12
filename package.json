@@ -1,7 +1,7 @@
 {
   "name": "bambu-nfc",
   "private": true,
-  "version": "1.2.4",
+  "version": "1.2.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
   "dependencies": {
     "@lucide/svelte": "^1.17.0",
     "@tailwindcss/vite": "^4.3.0",
-    "chameleon-ultra.js": "^0.3.25",
+    "chameleon-ultra.js": "^0.4.6",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {

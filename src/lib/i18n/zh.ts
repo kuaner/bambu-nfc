@@ -59,6 +59,10 @@ const zh: Record<string, string> = {
   'update.desc': '点击更新以获取最新功能',
   'update.button': '更新',
 
+  // unsupported
+  'unsupported.title': '不支持当前设备',
+  'unsupported.desc': '本工具依赖 Web Bluetooth API，仅支持 Chrome / Edge 桌面版浏览器。手机浏览器暂不支持。',
+
   // disclaimer
   'disclaimer': '仅供研究使用<br>所有标签数据及商标版权归拓竹（Bambu Lab）所有',
 }
