@@ -4,10 +4,7 @@ PWA 工具，通过蓝牙连接 [Chameleon Ultra](https://github.com/RfidResearc
 
 **🔗 在线使用：[kuaner.github.io/bambu-nfc](https://kuaner.github.io/bambu-nfc/)**
 
-<p align="center">
-  <img src="docs/qr-code.svg" alt="二维码" width="200"><br>
-  <em>手机扫码直接打开</em>
-</p>
+> ⚠️ **浏览器兼容性：** 本工具依赖 **Web Bluetooth API**，仅支持 **Chrome / Edge 桌面版**（Windows、macOS、Linux）。Safari、Firefox 及所有手机浏览器均**不支持**。
 
 ## 功能
 
