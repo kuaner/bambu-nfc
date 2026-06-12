@@ -22,6 +22,9 @@ const zh: Record<string, string> = {
   'scan.scanning': '扫描中...',
   'scan.button': '读取 NFC 标签',
   'scan.not_in_library': '未在库中找到',
+  'scan.section_basic': '基本信息',
+  'scan.section_temp': '温度参数',
+  'scan.section_extra': '其他信息',
 
   // write page
   'write.category': '类别',
@@ -48,6 +51,8 @@ const zh: Record<string, string> = {
   'tag.variant': '变体',
   'tag.material': '材料',
   'tag.date': '日期',
+  'tag.tray_uid': 'Tray',
+  'tag.not_set': '未设置',
 
   // disclaimer
   'disclaimer': '仅供研究使用<br>所有标签数据及商标版权归拓竹（Bambu Lab）所有',

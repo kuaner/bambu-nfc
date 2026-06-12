@@ -129,7 +129,6 @@
       title={writeStore.selectedMaterial + ' / ' + (writeStore.selectedColorKey ?? '')}
       color={colorEntry ? { css: colorEntry.colorCSS, secondaryCSS: colorEntry.secondaryColorCSS } : undefined}
       dump={writeStore.selectedDump}
-      variant="write"
       flash={cardFlash}
     />
   {/if}
@@ -137,7 +136,7 @@
   {#if writeStore.isReadyToWrite || writeStore.writeProgress || writeError}
     <div class="flex gap-2 mt-3">
       <button
-        class="relative flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer flex-1 overflow-hidden transition-colors {writeError ? 'bg-red text-white' : writeDone ? 'bg-card text-green border border-green/30' : 'bg-green text-black disabled:opacity-35 disabled:cursor-not-allowed'}"
+        class="relative flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer flex-1 overflow-hidden transition-colors {writeError ? 'bg-red text-white' : writeDone ? 'bg-card text-green border border-green/30' : 'bg-accent text-white disabled:opacity-35 disabled:cursor-not-allowed'}"
         onclick={() => { if (writeError) { writeError = null; return } doWrite() }}
         disabled={!writeDone && !writeError && (writeStore.isWriting || !bluetooth.isConnected)}
       >

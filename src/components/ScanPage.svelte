@@ -32,29 +32,32 @@
   }
 </script>
 
-<div class="overflow-y-auto px-4 pb-[calc(var(--spacing-tab-h)+var(--spacing-safe-b)+16px)] h-[calc(100dvh-48px-var(--spacing-tab-h)-var(--spacing-safe-b))] bg-bg">
-  <div class="flex flex-col items-center justify-center min-h-[calc(100dvh-48px-var(--spacing-tab-h)-var(--spacing-safe-b)-32px)] w-full">
+<div class="flex flex-col h-[calc(100dvh-48px-var(--spacing-tab-h)-var(--spacing-safe-b))] bg-bg">
+  <!-- Scrollable content -->
+  <div class="flex-1 overflow-y-auto px-4">
     {#if scanState === 'idle'}
-      <EmptyState icon={BookOpen} text={t('scan.empty_text')} />
+      <div class="flex flex-col items-center justify-center min-h-full">
+        <EmptyState icon={BookOpen} text={t('scan.empty_text')} />
+      </div>
     {:else if scanState === 'scanning'}
-      <div class="text-center">
+      <div class="flex flex-col items-center justify-center min-h-full">
         <Spinner />
         <div class="text-dim text-sm mt-4">{t('scan.scanning')}</div>
       </div>
     {:else if scanState === 'result' && scanResult}
-      <TagInfoCard
-        title={scanResult.detailedFilamentType}
-        parsed={scanResult}
-        variant="scan"
-        badge={matchInfo
-          ? { type: 'ok', text: matchInfo }
-          : { type: 'warn', text: t('scan.not_in_library') }
-        }
-      />
+      <div class="py-3">
+        <TagInfoCard
+          title={matchInfo || scanResult.detailedFilamentType || scanResult.filamentType}
+          parsed={scanResult}
+        />
+      </div>
     {/if}
+  </div>
 
+  <!-- Fixed bottom button -->
+  <div class="shrink-0 px-4 pb-3 pt-1">
     <button
-      class="flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors w-full mt-4 max-w-[280px] bg-accent text-white hover:bg-accent2 disabled:opacity-35 disabled:cursor-not-allowed"
+      class="flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors w-full bg-accent text-white hover:bg-accent2 disabled:opacity-35 disabled:cursor-not-allowed"
       onclick={doRead}
       disabled={scanState === 'scanning' || !bluetooth.isConnected}
     >

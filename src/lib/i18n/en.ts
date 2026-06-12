@@ -22,6 +22,9 @@ const en: Record<string, string> = {
   'scan.scanning': 'Scanning...',
   'scan.button': 'Read NFC Tag',
   'scan.not_in_library': 'Not in library',
+  'scan.section_basic': 'Basic Info',
+  'scan.section_temp': 'Temperatures',
+  'scan.section_extra': 'Details',
 
   // write page
   'write.category': 'Category',
@@ -48,6 +51,8 @@ const en: Record<string, string> = {
   'tag.variant': 'Variant',
   'tag.material': 'Material',
   'tag.date': 'Date',
+  'tag.tray_uid': 'Tray',
+  'tag.not_set': 'Not set',
 
   // disclaimer
   'disclaimer': 'For research purposes only.<br>All tag data and trademarks belong to Bambu Lab.',

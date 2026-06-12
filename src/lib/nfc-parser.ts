@@ -74,6 +74,16 @@ function bytesToAscii(buf: Uint8Array): string {
   return new TextDecoder('ascii').decode(buf).replace(/\x00/g, ' ').trim()
 }
 
+function formatBambuDate(raw: string): string {
+  // Format: "YYYY_MM_DD_HH_mm" or "YY_MM_DD_HH"
+  const parts = raw.split('_')
+  if (parts.length >= 3) {
+    const y = parts[0].length === 2 ? '20' + parts[0] : parts[0]
+    return `${y}-${parts[1]}-${parts[2]}`
+  }
+  return raw
+}
+
 function readUint16LE(buf: Uint8Array, offset: number): number {
   return buf[offset] | (buf[offset + 1] << 8)
 }
@@ -149,8 +159,8 @@ export function parseTagDump(dumpData: Uint8Array | ArrayBuffer): ParsedTag | nu
     },
     xCamInfo: bytesToHex(blocks[8].slice(0, 12)),
     trayUid: bytesToHex(blocks[9]),
-    productionDate: bytesToAscii(blocks[12]),
-    shortProductionDate: bytesToAscii(blocks[13]),
+    productionDate: formatBambuDate(bytesToAscii(blocks[12])),
+    shortProductionDate: formatBambuDate(bytesToAscii(blocks[13])),
   }
 }
 
