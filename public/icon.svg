@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#4f8cff"/>
+  <g transform="translate(256,256)">
+    <!-- NFC waves -->
+    <path d="M-60,-60 A85,85 0 0,1 60,-60" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+    <path d="M-95,-95 A135,135 0 0,1 95,-95" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" opacity="0.7"/>
+    <path d="M-125,-125 A178,178 0 0,1 125,-125" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" opacity="0.4"/>
+    <!-- Dot in center -->
+    <circle cx="0" cy="0" r="24" fill="#fff"/>
+  </g>
+</svg>
