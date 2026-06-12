@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES ? '/bambu-nfc/' : '/',
   resolve: {
     extensions: ['.mjs', '.js', '.mts', '.ts', '.svelte.ts', '.jsx', '.tsx', '.json']
   },

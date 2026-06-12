@@ -29,12 +29,11 @@ jobs:
       - run: npm ci
 
       - name: Generate bambu-tags.json
-        run: |
-          git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git _rfid-lib
-          npx tsx scripts/generate-db.ts _rfid-lib public/bambu-tags.json
-          rm -rf _rfid-lib
+        run: npm run generate-db
 
       - run: npm run build
+        env:
+          GITHUB_PAGES: 1
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

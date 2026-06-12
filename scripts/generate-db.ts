@@ -11,14 +11,17 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
 import { parseTagDump, EXPECTED_DUMP_SIZE } from '../src/lib/nfc-parser.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const ROOT = path.resolve(__dirname, '..')
 
+const REPO_URL = 'https://github.com/queengooborg/Bambu-Lab-RFID-Library.git'
 const LIBRARY_DIR = process.argv[2] || path.join(ROOT, 'bambu-rfid-library')
 const OUTPUT_FILE = process.argv[3] || path.join(ROOT, 'public', 'bambu-tags.json')
+const shouldCleanup = !process.argv[2]
 
 // --- Directory scanning ---
 
@@ -59,12 +62,12 @@ function parsePathSegments(filePath: string): { category: string; material: stri
 // --- Main ---
 
 function main(): void {
-  console.log('Scanning library at: ' + LIBRARY_DIR)
-
   if (!fs.existsSync(LIBRARY_DIR)) {
-    console.error('ERROR: Library directory not found: ' + LIBRARY_DIR)
-    process.exit(1)
+    console.log('Cloning RFID library (shallow)...')
+    execSync(`git clone --depth 1 ${REPO_URL} ${LIBRARY_DIR}`, { stdio: 'inherit' })
   }
+
+  console.log('Scanning library at: ' + LIBRARY_DIR)
 
   const allFiles = walkDir(LIBRARY_DIR)
   const binFiles = allFiles.filter(isDumpFile)
@@ -160,6 +163,11 @@ function main(): void {
     console.log('\nErrors:')
     for (const e of errors.slice(0, 10)) console.log('  ' + e.file + ': ' + e.error)
     if (errors.length > 10) console.log('  ... and ' + (errors.length - 10) + ' more')
+  }
+
+  if (shouldCleanup) {
+    console.log('\nCleaning up cloned repo...')
+    fs.rmSync(LIBRARY_DIR, { recursive: true, force: true })
   }
 }
 

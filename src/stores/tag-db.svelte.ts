@@ -57,7 +57,7 @@ class TagDbStore {
 
   async load(): Promise<void> {
     try {
-      const resp = await fetch('/bambu-tags.json')
+      const resp = await fetch(import.meta.env.BASE_URL + 'bambu-tags.json')
       if (!resp.ok) throw new Error('HTTP ' + resp.status)
       this.tagDB = await resp.json()
     } catch (e: any) {
