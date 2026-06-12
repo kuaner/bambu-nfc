@@ -3,12 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#0f1117">
+  <meta name="theme-color" content="#4f8cff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <title>Bambu NFC</title>
+  <title>Bambu NFC - 读写 Bambu Lab 3D 打印机 NFC 标签</title>
+
+  <!-- SEO -->
+  <meta name="description" content="PWA 工具，通过蓝牙连接 Chameleon Ultra，读写 Bambu Lab 3D 打印机耗材盘 NFC 标签。支持 PLA/PETG/ABS/TPU 等耗材，自动密钥派生。">
+  <meta name="keywords" content="Bambu Lab, NFC, RFID, Chameleon Ultra, 3D打印, 耗材, PLA, PETG, 标签读写, Web Bluetooth">
+  <link rel="canonical" href="https://kuaner.github.io/bambu-nfc/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Bambu NFC">
+  <meta property="og:description" content="读写 Bambu Lab 3D 打印机耗材盘 NFC 标签，支持蓝牙连接 Chameleon Ultra">
+  <meta property="og:url" content="https://kuaner.github.io/bambu-nfc/">
+  <meta property="og:image" content="https://kuaner.github.io/bambu-nfc/icon-512.png">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Bambu NFC">
+  <meta name="twitter:description" content="读写 Bambu Lab 3D 打印机耗材盘 NFC 标签">
+  <meta name="twitter:image" content="https://kuaner.github.io/bambu-nfc/icon-512.png">
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Bambu NFC",
+    "description": "PWA tool for reading and writing NFC tags on Bambu Lab 3D printer filament spools via Chameleon Ultra",
+    "url": "https://kuaner.github.io/bambu-nfc/",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "browserRequirements": "Requires Chrome or Edge with Web Bluetooth API support",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="app"></div>
