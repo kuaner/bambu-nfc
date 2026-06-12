@@ -1,4 +1,5 @@
 import type { ParsedTag } from '../lib/nfc-parser'
+import tagData from '../data/bambu-tags.json'
 
 interface TagDB {
   generated: string
@@ -42,40 +43,24 @@ export interface ColorEntry {
   dumps: TagDump[]
 }
 
-class TagDbStore {
-  tagDB = $state<TagDB | null>(null)
-  isLoading = $state(true)
-  loadError = $state<string | null>(null)
+const tagDB = tagData as TagDB
 
+class TagDbStore {
   get categories(): string[] {
-    return this.tagDB ? Object.keys(this.tagDB.categories) : []
+    return Object.keys(tagDB.categories)
   }
 
   get isReady(): boolean {
-    return this.tagDB !== null
-  }
-
-  async load(): Promise<void> {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 30_000)
-      const resp = await fetch(import.meta.env.BASE_URL + 'bambu-tags.json', { signal: controller.signal })
-      clearTimeout(timeout)
-      if (!resp.ok) throw new Error('HTTP ' + resp.status)
-      this.tagDB = await resp.json()
-    } catch (e: any) {
-      this.loadError = e.name === 'AbortError' ? 'Timeout' : e.message
-    }
-    this.isLoading = false
+    return true
   }
 
   getMaterials(categoryName: string): string[] {
-    if (!this.tagDB?.categories[categoryName]) return []
-    return Object.keys(this.tagDB.categories[categoryName].materials)
+    if (!tagDB.categories[categoryName]) return []
+    return Object.keys(tagDB.categories[categoryName].materials)
   }
 
   getMaterial(categoryName: string, materialName: string) {
-    return this.tagDB?.categories[categoryName]?.materials[materialName] ?? null
+    return tagDB.categories[categoryName]?.materials[materialName] ?? null
   }
 
   getColors(categoryName: string, materialName: string): ColorEntry[] {
@@ -91,10 +76,9 @@ class TagDbStore {
   }
 
   findInLibrary(parsed: ParsedTag): string | null {
-    if (!this.tagDB) return null
-    for (const c in this.tagDB.categories) {
-      for (const m in this.tagDB.categories[c].materials) {
-        const mat = this.tagDB.categories[c].materials[m]
+    for (const c in tagDB.categories) {
+      for (const m in tagDB.categories[c].materials) {
+        const mat = tagDB.categories[c].materials[m]
         if (mat.filamentType === parsed.filamentType) {
           for (const col in mat.colors) {
             for (const dump of mat.colors[col].dumps) {
@@ -104,8 +88,8 @@ class TagDbStore {
         }
       }
     }
-    for (const c in this.tagDB.categories) {
-      for (const m in this.tagDB.categories[c].materials) {
+    for (const c in tagDB.categories) {
+      for (const m in tagDB.categories[c].materials) {
         if (m === parsed.detailedFilamentType) return `${c} / ${m}`
       }
     }

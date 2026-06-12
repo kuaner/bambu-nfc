@@ -15,27 +15,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
-        globIgnores: ['**/bambu-tags.json'],
-        runtimeCaching: [
-          {
-            urlPattern: /\/bambu-tags\.json$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'bambu-nfc-tags',
-              networkTimeoutSeconds: 10,
-              expiration: { maxEntries: 1 }
-            }
-          },
-          {
-            urlPattern: /^https?.*/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'bambu-nfc-v2',
-              networkTimeoutSeconds: 10,
-              expiration: { maxEntries: 50 }
-            }
-          }
-        ]
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
         name: 'Bambu NFC Writer',

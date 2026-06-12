@@ -20,7 +20,7 @@ const ROOT = path.resolve(__dirname, '..')
 
 const REPO_URL = 'https://github.com/queengooborg/Bambu-Lab-RFID-Library.git'
 const LIBRARY_DIR = process.argv[2] || path.join(ROOT, 'bambu-rfid-library')
-const OUTPUT_FILE = process.argv[3] || path.join(ROOT, 'public', 'bambu-tags.json')
+const OUTPUT_FILE = process.argv[3] || path.join(ROOT, 'src', 'data', 'bambu-tags.json')
 const shouldCleanup = !process.argv[2]
 
 // --- Directory scanning ---
