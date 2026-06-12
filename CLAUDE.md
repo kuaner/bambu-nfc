@@ -63,12 +63,12 @@ docs/
 
 重新生成标签数据库：
 ```bash
-git clone https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library.git
+git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
 node scripts/generate-db.js
 rm -rf Bambu-Lab-RFID-Library
 ```
 
 ## 参考资料
 
-- [Bambu-Lab-RFID-Library](https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library) — 标签 dump 库
-- [RFID-Tag-Guide](https://github.com/Bambu-Research-Group/RFID-Tag-Guide) — 标签格式与密钥派生文档
+- [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — 标签 dump 库
+- [RFID-Tag-Guide](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — 标签格式与密钥派生文档

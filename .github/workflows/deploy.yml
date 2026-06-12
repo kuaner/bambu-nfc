@@ -30,7 +30,7 @@ jobs:
 
       - name: Generate bambu-tags.json
         run: |
-          git clone https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library.git _rfid-lib
+          git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git _rfid-lib
           node scripts/generate-db.ts _rfid-lib public/bambu-tags.json
           rm -rf _rfid-lib
 

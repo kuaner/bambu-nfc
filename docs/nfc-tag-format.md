@@ -1,6 +1,6 @@
 # NFC 标签格式参考
 
-MIFARE Classic 1K，1024 bytes（64 blocks × 16 bytes）。来源：[RFID-Tag-Guide](https://github.com/Bambu-Research-Group/RFID-Tag-Guide)
+MIFARE Classic 1K，1024 bytes（64 blocks × 16 bytes）。来源：[RFID-Tag-Guide](https://github.com/queengooborg/Bambu-Lab-RFID-Library)
 
 ## Block 布局
 

@@ -29,7 +29,7 @@ npm run preview  # 预览生产构建
 ### 重新生成标签数据库
 
 ```bash
-git clone https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library.git
+git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
 node scripts/generate-db.ts
 rm -rf Bambu-Lab-RFID-Library
 ```
@@ -65,8 +65,8 @@ docs/
 本项目依赖以下开源项目和研究资料：
 
 - [chameleon-ultra.js](https://github.com/taichunmin/chameleon-ultra.js) — Chameleon Ultra 设备的 JavaScript SDK，提供蓝牙通信和 NFC 操作能力
-- [Bambu-Lab-RFID-Library](https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library) — Bambu Lab RFID 标签 dump 库，本项目的标签数据来源
-- [RFID-Tag-Guide](https://github.com/Bambu-Research-Group/RFID-Tag-Guide) — Bambu Lab NFC 标签格式分析与密钥派生文档
+- [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — Bambu Lab RFID 标签 dump 库，本项目的标签数据来源
+- [RFID-Tag-Guide](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — Bambu Lab NFC 标签格式分析与密钥派生文档
 
 ## 免责声明
 

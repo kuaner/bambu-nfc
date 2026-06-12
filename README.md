@@ -29,7 +29,7 @@ npm run preview  # Preview production build
 ### Regenerate Tag Database
 
 ```bash
-git clone https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library.git
+git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
 node scripts/generate-db.ts
 rm -rf Bambu-Lab-RFID-Library
 ```
@@ -65,8 +65,8 @@ docs/
 This project depends on the following open-source projects and research:
 
 - [chameleon-ultra.js](https://github.com/taichunmin/chameleon-ultra.js) — JavaScript SDK for Chameleon Ultra device, providing Bluetooth communication and NFC operations
-- [Bambu-Lab-RFID-Library](https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library) — Bambu Lab RFID tag dump library, the source of tag data for this project
-- [RFID-Tag-Guide](https://github.com/Bambu-Research-Group/RFID-Tag-Guide) — Bambu Lab NFC tag format analysis and key derivation documentation
+- [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — Bambu Lab RFID tag dump library, the source of tag data for this project
+- [RFID-Tag-Guide](https://github.com/queengooborg/Bambu-Lab-RFID-Library) — Bambu Lab NFC tag format analysis and key derivation documentation
 
 ## Disclaimer
 

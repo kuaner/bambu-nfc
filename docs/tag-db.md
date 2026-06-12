@@ -1,12 +1,12 @@
 # 标签数据库 (bambu-tags.json)
 
-由 `scripts/generate-db.js` 扫描 [Bambu-Lab-RFID-Library](https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library) 生成。
+由 `scripts/generate-db.js` 扫描 [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library) 生成。
 
 ## 重新生成
 
 ```bash
 # 1. clone 库到项目根目录（临时）
-git clone https://github.com/Bambu-Research-Group/Bambu-Lab-RFID-Library.git
+git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
 
 # 2. 运行脚本
 node scripts/generate-db.js
