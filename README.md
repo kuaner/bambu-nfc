@@ -5,6 +5,8 @@ A PWA tool for reading and writing MIFARE Classic 1K NFC tags on Bambu Lab 3D pr
 **🔗 Online: [kuaner.github.io/bambu-nfc](https://kuaner.github.io/bambu-nfc/)**
 
 > ⚠️ **Browser Compatibility:** This tool requires the **Web Bluetooth API**, which is only supported on **Chrome / Edge desktop** (Windows, macOS, Linux). Safari, Firefox, and all mobile browsers are **not supported**.
+>
+> ⚠️ **NFC Card Type:** You must use **FUID** cards. **UID** and **CUID** cards will be detected and rejected by the printer.
 
 ## Features
 

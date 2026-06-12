@@ -5,6 +5,8 @@ PWA 工具，通过蓝牙连接 [Chameleon Ultra](https://github.com/RfidResearc
 **🔗 在线使用：[kuaner.github.io/bambu-nfc](https://kuaner.github.io/bambu-nfc/)**
 
 > ⚠️ **浏览器兼容性：** 本工具依赖 **Web Bluetooth API**，仅支持 **Chrome / Edge 桌面版**（Windows、macOS、Linux）。Safari、Firefox 及所有手机浏览器均**不支持**。
+>
+> ⚠️ **NFC 卡类型：** 必须使用 **FUID** 卡。**UID** 和 **CUID** 卡会被打印机识别并拒绝。
 
 ## 功能
 
