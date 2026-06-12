@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { RefreshCw } from '@lucide/svelte'
+  import { t } from '../lib/i18n'
 
   let needUpdate = $state(false)
   let updateSW: (() => Promise<void>) | null = null
@@ -28,14 +29,14 @@
         <RefreshCw size={16} class="text-accent" />
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-sm font-semibold">新版本可用</div>
-        <div class="text-xs text-dim">点击更新以获取最新功能</div>
+        <div class="text-sm font-semibold">{t('update.title')}</div>
+        <div class="text-xs text-dim">{t('update.desc')}</div>
       </div>
       <button
         class="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors bg-accent text-white hover:bg-accent2"
         onclick={handleUpdate}
       >
-        更新
+        {t('update.button')}
       </button>
     </div>
   </div>

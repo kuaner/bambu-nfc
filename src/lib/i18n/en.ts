@@ -54,6 +54,11 @@ const en: Record<string, string> = {
   'tag.tray_uid': 'Tray',
   'tag.not_set': 'Not set',
 
+  // update prompt
+  'update.title': 'Update available',
+  'update.desc': 'A new version is ready to install',
+  'update.button': 'Update',
+
   // disclaimer
   'disclaimer': 'For research purposes only.<br>All tag data and trademarks belong to Bambu Lab.',
 }

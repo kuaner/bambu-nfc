@@ -54,6 +54,11 @@ const zh: Record<string, string> = {
   'tag.tray_uid': 'Tray',
   'tag.not_set': '未设置',
 
+  // update prompt
+  'update.title': '新版本可用',
+  'update.desc': '点击更新以获取最新功能',
+  'update.button': '更新',
+
   // disclaimer
   'disclaimer': '仅供研究使用<br>所有标签数据及商标版权归拓竹（Bambu Lab）所有',
 }
