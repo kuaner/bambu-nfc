@@ -57,11 +57,14 @@ class TagDbStore {
 
   async load(): Promise<void> {
     try {
-      const resp = await fetch(import.meta.env.BASE_URL + 'bambu-tags.json')
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30_000)
+      const resp = await fetch(import.meta.env.BASE_URL + 'bambu-tags.json', { signal: controller.signal })
+      clearTimeout(timeout)
       if (!resp.ok) throw new Error('HTTP ' + resp.status)
       this.tagDB = await resp.json()
     } catch (e: any) {
-      this.loadError = e.message
+      this.loadError = e.name === 'AbortError' ? 'Timeout' : e.message
     }
     this.isLoading = false
   }
