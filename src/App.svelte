@@ -39,12 +39,3 @@
   <TabBar {activeTab} ontabchange={switchTab} />
   <UpdatePrompt />
 {/if}
-
-{#if activeTab === 'scan'}
-  <ScanPage />
-{:else}
-  <WritePage />
-{/if}
-
-<TabBar {activeTab} ontabchange={switchTab} />
-<UpdatePrompt />
