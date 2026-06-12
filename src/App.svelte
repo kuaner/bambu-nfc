@@ -18,11 +18,14 @@
 <ConnectOverlay />
 <TopBar />
 
-{#if activeTab === 'scan'}
-  <ScanPage />
-{:else}
-  <WritePage />
-{/if}
+<main class="relative" style="height:calc(100dvh - 48px - var(--spacing-tab-h) - var(--spacing-safe-b))">
+  <div class="absolute inset-0 {activeTab === 'scan' ? '' : 'hidden'}" aria-hidden={activeTab !== 'scan'}>
+    <ScanPage active={activeTab === 'scan'} />
+  </div>
+  <div class="absolute inset-0 {activeTab === 'write' ? '' : 'hidden'}" aria-hidden={activeTab !== 'write'}>
+    <WritePage />
+  </div>
+</main>
 
 <TabBar {activeTab} ontabchange={switchTab} />
 <UpdatePrompt />

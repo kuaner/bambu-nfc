@@ -5,17 +5,24 @@
   --color-card: #1a1d27;
   --color-border: #2a2d3a;
   --color-text: #e0e0e6;
-  --color-dim: #6b7084;
+  --color-dim: #848aa3;
   --color-accent: #4f8cff;
   --color-accent2: #6fa0ff;
   --color-green: #34d399;
   --color-yellow: #fbbf24;
+  --color-orange: #f97316;
   --color-red: #f87171;
+
+  --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.5);
 
   --spacing-safe-b: env(safe-area-inset-bottom, 0px);
   --spacing-tab-h: 56px;
 
   --animate-card-swap: card-swap 0.45s ease-in-out;
+
+  /* Easing */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
@@ -52,10 +59,72 @@ select:focus { border-color: var(--color-accent); }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
+/* Focus-visible ring for all interactive elements */
+button:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* 卡片飞出飞入 keyframe */
 @keyframes card-swap {
   0% { opacity: 1; transform: translateX(0) scale(1); }
   25% { opacity: 0; transform: translateX(-20px) scale(0.95); }
   50% { opacity: 0; transform: translateX(20px) scale(0.95); }
   100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Scan result entrance: subtle rise + fade */
+@keyframes result-reveal {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Write completion pulse */
+@keyframes done-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+/* Empty state gentle float */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Utility classes */
+.animate-result-reveal {
+  animation: result-reveal 0.25s var(--ease-out-expo);
+}
+.animate-done-pulse {
+  animation: done-pulse 0.6s var(--ease-out-quart);
+}
+.animate-gentle-float {
+  animation: gentle-float 3s ease-in-out infinite;
+}
+
+/* Reduced motion: replace complex animations with simple crossfades */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+  .animate-card-swap {
+    animation: card-swap-reduced 0.2s ease-out;
+  }
+  .animate-result-reveal {
+    animation: card-swap-reduced 0.15s ease-out;
+  }
+  .animate-done-pulse {
+    animation: none;
+  }
+  .animate-gentle-float {
+    animation: none;
+  }
+  @keyframes card-swap-reduced {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
 }

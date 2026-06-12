@@ -4,7 +4,7 @@
 </script>
 
 <div class="flex flex-col items-center px-5 py-12 text-dim text-sm">
-  <div class="mb-3 opacity-30">
+  <div class="mb-3 opacity-30 animate-gentle-float">
     <Icon size={48} stroke-width={1.5} />
   </div>
   <div class="text-center">{@html text}</div>

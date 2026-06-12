@@ -2,10 +2,11 @@
   import { bluetooth } from '../stores/bluetooth.svelte'
   import { t } from '../lib/i18n'
   import { Bluetooth } from '@lucide/svelte'
+  import { fade } from 'svelte/transition'
 </script>
 
 {#if !bluetooth.isConnected}
-  <div class="fixed inset-0 bg-bg/95 flex flex-col items-center justify-center z-[200] gap-5">
+  <div class="fixed inset-0 bg-bg/95 flex flex-col items-center justify-center z-[200] gap-5" transition:fade={{ duration: 300 }}>
     <div class="text-[2.5rem] font-extrabold">Bambu <span class="text-accent">NFC</span></div>
     <div class="text-dim text-sm text-center max-w-[260px]">{t('conn.subtitle')}</div>
     <button
