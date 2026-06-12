@@ -5,7 +5,7 @@
 </script>
 
 <div class="h-12 flex items-center justify-between px-4 bg-bg border-b border-border relative z-10">
-  <div class="text-[1.05rem] font-bold">Bambu <span class="text-accent">NFC</span></div>
+  <div class="text-[1.05rem] font-bold">Bambu <span class="text-accent">NFC</span> <span class="text-[0.55rem] font-normal text-dim align-middle">v{__APP_VERSION__}</span></div>
   <div class="flex items-center gap-2">
     {#if bluetooth.isConnected}
       <button class="flex items-center gap-1.5 text-xs text-dim bg-none border border-border rounded-md px-2.5 py-1 cursor-pointer transition-colors hover:border-red group" onclick={() => bluetooth.disconnect()}>
