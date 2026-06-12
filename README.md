@@ -2,6 +2,13 @@
 
 A PWA tool for reading and writing MIFARE Classic 1K NFC tags on Bambu Lab 3D printer filament spools via Bluetooth-connected [Chameleon Ultra](https://github.com/RfidResearchGroup/ChameleonUltra) device.
 
+**🔗 Online: [kuaner.github.io/bambu-nfc](https://kuaner.github.io/bambu-nfc/)**
+
+<p align="center">
+  <img src="docs/qr-code.svg" alt="QR Code" width="200"><br>
+  <em>Scan to open on your phone</em>
+</p>
+
 ## Features
 
 - 📖 **Read** — Scan NFC tags, parse filament info (type, color, temperature, diameter, etc.), and match against the tag library
@@ -29,9 +36,7 @@ npm run preview  # Preview production build
 ### Regenerate Tag Database
 
 ```bash
-git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
-node scripts/generate-db.ts
-rm -rf Bambu-Lab-RFID-Library
+npm run generate-db
 ```
 
 ## Project Structure

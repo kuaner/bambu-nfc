@@ -2,6 +2,13 @@
 
 PWA 工具，通过蓝牙连接 [Chameleon Ultra](https://github.com/RfidResearchGroup/ChameleonUltra) 设备，读写 Bambu Lab 3D 打印机耗材盘上的 MIFARE Classic 1K NFC 标签。
 
+**🔗 在线使用：[kuaner.github.io/bambu-nfc](https://kuaner.github.io/bambu-nfc/)**
+
+<p align="center">
+  <img src="docs/qr-code.svg" alt="二维码" width="200"><br>
+  <em>手机扫码直接打开</em>
+</p>
+
 ## 功能
 
 - 📖 **读取** — 扫描 NFC 标签，解析耗材信息（类型、颜色、温度、直径等），并在标签库中匹配
@@ -29,9 +36,7 @@ npm run preview  # 预览生产构建
 ### 重新生成标签数据库
 
 ```bash
-git clone https://github.com/queengooborg/Bambu-Lab-RFID-Library.git
-node scripts/generate-db.ts
-rm -rf Bambu-Lab-RFID-Library
+npm run generate-db
 ```
 
 ## 项目结构
