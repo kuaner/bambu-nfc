@@ -68,7 +68,7 @@ npm run generate-db
    - 浅克隆 RFID 库 → 生成标签数据
    - `npm run build`（带 `GITHUB_PAGES=1` 环境变量设置 base URL）
    - 自动部署到 GitHub Pages
-5. 创建 Release：`gh release create v1.x.x --title "v1.x.x" --notes "..."`
+   - 自动创建 GitHub Release（基于 commit history 生成 release notes）
 
 PWA 更新机制：使用 `registerType: 'prompt'`，新版本部署后用户打开 PWA 会看到更新提示，点击即可刷新。
 
