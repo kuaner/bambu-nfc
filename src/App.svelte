@@ -6,6 +6,7 @@
   import TabBar from './components/TabBar.svelte'
   import ScanPage from './components/ScanPage.svelte'
   import WritePage from './components/WritePage.svelte'
+  import UpdatePrompt from './components/UpdatePrompt.svelte'
 
   let activeTab: string = $state('scan')
 
@@ -25,3 +26,4 @@
 {/if}
 
 <TabBar {activeTab} ontabchange={switchTab} />
+<UpdatePrompt />

@@ -12,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     svelte(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
