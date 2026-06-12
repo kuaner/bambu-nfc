@@ -21,7 +21,7 @@ export default defineConfig({
         name: 'Bambu NFC Writer',
         short_name: 'Bambu NFC',
         description: 'Write & read Bambu Lab NFC tags via Chameleon Ultra',
-        start_url: '/',
+        start_url: process.env.GITHUB_PAGES ? '/bambu-nfc/' : '/',
         display: 'standalone',
         background_color: '#0f1117',
         theme_color: '#4f8cff',
