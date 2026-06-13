@@ -35,6 +35,13 @@ export interface TagDump {
   dumpBase64: string
 }
 
+export interface LibraryMatch {
+  category: string
+  material: string
+  color: string
+  dump: TagDump
+}
+
 export interface ColorEntry {
   name: string
   colorCSS: string
@@ -75,22 +82,31 @@ class TagDbStore {
     }))
   }
 
-  findInLibrary(parsed: ParsedTag): string | null {
-    for (const c in tagDB.categories) {
-      for (const m in tagDB.categories[c].materials) {
-        const mat = tagDB.categories[c].materials[m]
-        if (mat.filamentType === parsed.filamentType) {
-          for (const col in mat.colors) {
-            for (const dump of mat.colors[col].dumps) {
-              if (dump.uid === parsed.uid) return `${c} / ${m} / ${col}`
-            }
-          }
-        }
-      }
+  findInLibrary(parsed: ParsedTag, uid?: string): string | null {
+    const uidMatch = this.findDumpByUid(uid ?? parsed.uid)
+    if (uidMatch) {
+      return `${uidMatch.category} / ${uidMatch.material} / ${uidMatch.color}`
     }
     for (const c in tagDB.categories) {
       for (const m in tagDB.categories[c].materials) {
         if (m === parsed.detailedFilamentType) return `${c} / ${m}`
+      }
+    }
+    return null
+  }
+
+  findDumpByUid(uid: string): LibraryMatch | null {
+    const normalized = uid.toUpperCase()
+    for (const category in tagDB.categories) {
+      for (const material in tagDB.categories[category].materials) {
+        const mat = tagDB.categories[category].materials[material]
+        for (const color in mat.colors) {
+          for (const dump of mat.colors[color].dumps) {
+            if (dump.uid.toUpperCase() === normalized) {
+              return { category, material, color, dump }
+            }
+          }
+        }
       }
     }
     return null

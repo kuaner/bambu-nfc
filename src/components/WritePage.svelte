@@ -2,13 +2,13 @@
   import { bluetooth } from '../stores/bluetooth.svelte'
   import { tagDb } from '../stores/tag-db.svelte'
   import { writeStore } from '../stores/write.svelte'
-  import { writeTag } from '../lib/nfc'
+  import { writeTag, WRITE_PROGRESS_TOTAL, BAMBU_SECTOR_COUNT } from '../lib/nfc'
+  import { formatNfcError } from '../lib/nfc-errors'
   import { t } from '../lib/i18n'
   import { PenLine, Shuffle, Check } from '@lucide/svelte'
   import TagInfoCard from './TagInfoCard.svelte'
   import EmptyState from './EmptyState.svelte'
 
-  let writeError: string | null = $state(null)
   let cardFlash = $state(false)
 
   const material = $derived(
@@ -41,12 +41,20 @@
       : 0
   )
 
-  const writeLabel = $derived(
-    writeStore.writeProgress?.message ?? t('write.button')
-  )
+  const writeLabel = $derived.by(() => {
+    const p = writeStore.writeProgress
+    if (!p) return t('write.button')
+    if (p.message) return p.message
+    if (p.current === 0) return t('write.progress.format').replace('{0}', '0')
+    if (p.current <= BAMBU_SECTOR_COUNT) {
+      return t('write.progress.format').replace('{0}', String(p.current))
+    }
+    return t('write.progress.write').replace('{0}', String(p.current - BAMBU_SECTOR_COUNT))
+  })
 
   const writeDone = $derived(
-    writeStore.writeProgress != null && !writeStore.isWriting && writeStore.writeProgress.current === writeStore.writeProgress.total
+    writeStore.writeProgress != null && !writeStore.isWriting &&
+    writeStore.writeProgress.current === writeStore.writeProgress.total
   )
 
   function cssHue(css: string): number {
@@ -89,7 +97,7 @@
     if (writeDone) { writeStore.writeProgress = null; return }
     if (!writeStore.selectedDump || !bluetooth.ultra) return
     writeStore.isWriting = true
-    writeError = null
+    writeStore.writeError = null
 
     try {
       const ok = await writeTag(
@@ -100,10 +108,10 @@
         }
       )
       if (ok) {
-        writeStore.writeProgress = { current: 16, total: 16, message: t('write.done') }
+        writeStore.writeProgress = { current: WRITE_PROGRESS_TOTAL, total: WRITE_PROGRESS_TOTAL, message: t('write.done') }
       }
     } catch (e: any) {
-      writeError = e.message
+      writeStore.writeError = formatNfcError(e.message)
       writeStore.writeProgress = null
     }
     writeStore.isWriting = false
@@ -189,19 +197,19 @@
     />
   {/if}
 
-  {#if writeStore.isReadyToWrite || writeStore.writeProgress || writeError}
+  {#if writeStore.isReadyToWrite || writeStore.writeProgress || writeStore.writeError}
     <div class="flex gap-2 mt-4">
       <button
-        class="relative flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer flex-1 overflow-hidden transition-colors {writeError ? 'bg-red text-white' : writeDone ? 'bg-card text-green border border-green/30 animate-done-pulse' : 'bg-accent text-white disabled:opacity-35 disabled:cursor-not-allowed'}"
-        onclick={() => { if (writeError) { writeError = null; return } doWrite() }}
-        disabled={!writeDone && !writeError && (writeStore.isWriting || !bluetooth.isConnected)}
+        class="relative flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer flex-1 overflow-hidden transition-colors {writeStore.writeError ? 'bg-red text-white' : writeDone ? 'bg-card text-green border border-green/30 animate-done-pulse' : 'bg-accent text-white disabled:opacity-35 disabled:cursor-not-allowed'}"
+        onclick={() => { if (writeStore.writeError) { writeStore.writeError = null; return } doWrite() }}
+        disabled={!writeDone && !writeStore.writeError && (writeStore.isWriting || !bluetooth.isConnected)}
       >
         {#if writeStore.writeProgress && !writeDone}
           <div class="absolute inset-0 bg-black/15 transition-[width] duration-300 ease-out" style="width:{writePct}%"></div>
         {/if}
         <span class="relative z-10 flex flex-col items-center gap-0.5">
-          {#if writeError}
-            <span class="text-xs font-normal">{writeError}</span>
+          {#if writeStore.writeError}
+            <span class="text-xs font-normal">{writeStore.writeError}</span>
             <span class="text-[0.65rem] opacity-70">{t('write.button')}</span>
           {:else if writeDone}
             <span class="flex items-center gap-1.5"><Check size={16} />{writeLabel}</span>

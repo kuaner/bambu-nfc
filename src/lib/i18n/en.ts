@@ -25,6 +25,7 @@ const en: Record<string, string> = {
   'scan.just_now': 'Just now',
   'scan.minutes_ago': '{0}m ago',
   'scan.not_in_library': 'Not in library',
+  'scan.repair': 'Repair Tag',
   'scan.section_basic': 'Basic Info',
   'scan.section_temp': 'Temperatures',
   'scan.section_extra': 'Details',
@@ -39,7 +40,20 @@ const en: Record<string, string> = {
   'write.button': 'Write to Tag',
   'write.empty_text': 'Select a filament above',
   'write.done': 'Done!',
+  'write.progress.format': 'Preparing sector {0}/16',
+  'write.progress.write': 'Writing sector {0}/16',
   'write.sector_failed': 'Write sector {0} failed',
+
+  // nfc write errors (codes thrown by src/lib/nfc.ts)
+  'nfc.format_sector0_auth': 'Format sector 0 auth failed',
+  'nfc.format_trailer_reset': 'Format sector {0} trailer reset failed',
+  'nfc.format_ff_auth': 'Format sector {0} FF key auth failed',
+  'nfc.format_clear_block': 'Format sector {0} clear block {1} failed',
+  'nfc.format_verify_read': 'Format sector {0} verify read block {1} failed',
+  'nfc.format_verify_block0': 'Format verify failed: block 0 was modified',
+  'nfc.format_verify_not_zero': 'Format verify failed: block {0} not zero',
+  'nfc.write_ff_auth': 'Write sector {0} FF key auth failed',
+  'nfc.write_block': 'Write block {0} failed',
 
   // tag info card labels
   'tag.uid': 'UID',

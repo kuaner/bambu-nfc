@@ -8,6 +8,7 @@ class WriteStore {
   colorDropdownOpen = $state(false)
   isWriting = $state(false)
   writeProgress = $state<{ current: number; total: number; message?: string } | null>(null)
+  writeError = $state<string | null>(null)
 
   get materials(): string[] {
     return tagDb.getMaterials(this.selectedCategory)
@@ -52,6 +53,17 @@ class WriteStore {
     this.reshuffleDump()
   }
 
+  selectFromLibrary(category: string, material: string, color: string, dump: TagDump): void {
+    this.selectedCategory = category
+    this.selectedMaterial = material
+    this.selectedColorKey = color
+    this.selectedDump = dump
+    this.colorDropdownOpen = false
+    this.isWriting = false
+    this.writeProgress = null
+    this.writeError = null
+  }
+
   reshuffleDump(): void {
     const entry = this.colors.find(c => c.name === this.selectedColorKey)
     if (!entry?.dumps.length) return
@@ -74,6 +86,7 @@ class WriteStore {
     this.colorDropdownOpen = false
     this.isWriting = false
     this.writeProgress = null
+    this.writeError = null
   }
 }
 

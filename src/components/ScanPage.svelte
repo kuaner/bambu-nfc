@@ -1,21 +1,23 @@
 <script lang="ts">
   import { bluetooth } from '../stores/bluetooth.svelte'
-  import { tagDb } from '../stores/tag-db.svelte'
+  import { tagDb, type LibraryMatch } from '../stores/tag-db.svelte'
+  import { writeStore } from '../stores/write.svelte'
   import { readTag } from '../lib/nfc'
   import { t } from '../lib/i18n'
   import type { ParsedTag } from '../lib/nfc-parser'
-  import { BookOpen, RotateCw } from '@lucide/svelte'
+  import { BookOpen, RotateCw, Wrench } from '@lucide/svelte'
   import EmptyState from './EmptyState.svelte'
   import Spinner from './Spinner.svelte'
   import TagInfoCard from './TagInfoCard.svelte'
 
-  let { active = true }: { active?: boolean } = $props()
+  let { active = true, ontabchange }: { active?: boolean; ontabchange?: (tab: string) => void } = $props()
 
   type ScanState = 'idle' | 'scanning' | 'result'
 
   let scanState: ScanState = $state('idle')
   let scanResult: ParsedTag | null = $state(null)
   let matchInfo: string | null = $state(null)
+  let libraryMatch: LibraryMatch | null = $state(null)
   let scanTime: Date | null = $state(null)
 
   const scanAge = $derived.by(() => {
@@ -31,16 +33,29 @@
     scanState = 'scanning'
     scanResult = null
     matchInfo = null
+    libraryMatch = null
 
     const result = await readTag(bluetooth.ultra)
     if (result) {
       scanResult = result.parsed
-      matchInfo = tagDb.findInLibrary(result.parsed)
+      libraryMatch = tagDb.findDumpByUid(result.uidHex)
+      matchInfo = tagDb.findInLibrary(result.parsed, result.uidHex)
       scanTime = new Date()
       scanState = 'result'
     } else {
       scanState = 'idle'
     }
+  }
+
+  function goRepair(): void {
+    if (!libraryMatch) return
+    writeStore.selectFromLibrary(
+      libraryMatch.category,
+      libraryMatch.material,
+      libraryMatch.color,
+      libraryMatch.dump
+    )
+    ontabchange?.('write')
   }
 </script>
 
@@ -72,8 +87,18 @@
     {/if}
   </div>
 
-  <!-- Fixed bottom button -->
-  <div class="shrink-0 px-4 pb-4 pt-2">
+  <!-- Fixed bottom buttons -->
+  <div class="shrink-0 px-4 pb-4 pt-2 flex flex-col gap-2">
+    {#if libraryMatch}
+      <button
+        class="flex items-center justify-center gap-2 px-5 py-3 border border-accent rounded-[10px] text-sm font-semibold cursor-pointer transition-colors w-full bg-card text-accent hover:bg-accent/10 disabled:opacity-35 disabled:cursor-not-allowed"
+        onclick={goRepair}
+        disabled={!bluetooth.isConnected}
+      >
+        <Wrench size={16} />
+        {t('scan.repair')}
+      </button>
+    {/if}
     <button
       class="flex items-center justify-center gap-2 px-5 py-3 border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors w-full bg-accent text-white hover:bg-accent2 disabled:opacity-35 disabled:cursor-not-allowed"
       onclick={doRead}

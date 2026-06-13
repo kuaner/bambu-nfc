@@ -5,3 +5,4 @@ dist
 *.png
 !public/icon*.png
 .claude
+.impeccable

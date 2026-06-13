@@ -32,12 +32,14 @@ z-index 100  .tabbar          底部导航栏（fixed）
 
 ## Write（写标签）
 
-`writeTag()` 流程：
+详见 **`docs/nfc-write.md`**。
+
+`writeTag()` 概要：
 1. 三级级联选择：Category → Material → Color
 2. 选择颜色后随机选一个 dump（多种时可 🎲 切换）
-3. 写入时先检测 gen1a → 支持 gen1a 直写和密钥认证写入
-4. gen1a 写全部 16 sectors；密钥模式跳过 sector 0（UID 只读）
-5. 每个扇区写入有 3 次重试，间隔 300ms
+3. 写入时执行 `FormatThenWriteDump`：先格式化为 FF 密钥，再用 FF 密钥写入 dump
+4. 进度 32 步：格式化 16 扇区 + 写入 16 扇区
+5. Scan 页「修复标签」：按物理 UID 查库，跳转写入页并预选 dump
 
 ## 关键全局变量
 

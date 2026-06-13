@@ -25,6 +25,7 @@ const zh: Record<string, string> = {
   'scan.just_now': '刚刚',
   'scan.minutes_ago': '{0} 分钟前',
   'scan.not_in_library': '未在库中找到',
+  'scan.repair': '修复标签',
   'scan.section_basic': '基本信息',
   'scan.section_temp': '温度参数',
   'scan.section_extra': '其他信息',
@@ -39,7 +40,20 @@ const zh: Record<string, string> = {
   'write.button': '写入标签',
   'write.empty_text': '请在上方选择耗材',
   'write.done': '完成！',
+  'write.progress.format': '准备扇区 {0}/16',
+  'write.progress.write': '写入扇区 {0}/16',
   'write.sector_failed': '写入扇区 {0} 失败',
+
+  // nfc write errors (codes thrown by src/lib/nfc.ts)
+  'nfc.format_sector0_auth': '格式化 sector 0 认证失败',
+  'nfc.format_trailer_reset': '格式化 sector {0} trailer 重置失败',
+  'nfc.format_ff_auth': '格式化 sector {0} FF 密钥认证失败',
+  'nfc.format_clear_block': '格式化 sector {0} 清零 block {1} 失败',
+  'nfc.format_verify_read': '格式化 sector {0} 校验读取 block {1} 失败',
+  'nfc.format_verify_block0': '格式化校验失败：block 0 被意外修改',
+  'nfc.format_verify_not_zero': '格式化校验失败：block {0} 未清零',
+  'nfc.write_ff_auth': '写入 sector {0} FF 密钥认证失败',
+  'nfc.write_block': '写入 block {0} 失败',
 
   // tag info card labels
   'tag.uid': 'UID',
