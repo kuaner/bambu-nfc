@@ -30,6 +30,8 @@ const zh: Record<string, string> = {
   'scan.section_basic': '基本信息',
   'scan.section_temp': '温度参数',
   'scan.section_extra': '其他信息',
+  'scan.no_tag': '未检测到标签，请重新放置后再试',
+  'scan.read_failed': '读取失败，请重试',
 
   // write page
   'write.category': '类别',
@@ -55,9 +57,11 @@ const zh: Record<string, string> = {
   'nfc.format_verify_not_zero': '格式化校验失败：block {0} 未清零',
   'nfc.write_ff_auth': '写入 sector {0} FF 密钥认证失败',
   'nfc.write_block': '写入 block {0} 失败',
+  'nfc.read_failed': '读取失败，请重新放置标签后再试',
 
   // tag info card labels
   'tag.uid': 'UID',
+  'tag.uid_copied': '已复制',
   'tag.weight': '重量',
   'tag.length': '长度',
   'tag.diameter': '直径',

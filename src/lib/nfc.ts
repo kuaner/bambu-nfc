@@ -318,9 +318,9 @@ export async function readTag(ultra: ChameleonUltra): Promise<ReadResult | null>
     if (ok) dumpData = buf
   }
 
-  if (!dumpData || dumpData.length !== EXPECTED_DUMP_SIZE) return null
+  if (!dumpData || dumpData.length !== EXPECTED_DUMP_SIZE) throw new Error('nfc.read_failed')
   const parsed = parseTagDump(dumpData)
-  if (!parsed) return null
+  if (!parsed) throw new Error('nfc.read_failed')
   return { parsed, uidHex }
 }
 

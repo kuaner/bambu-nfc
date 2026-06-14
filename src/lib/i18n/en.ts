@@ -30,6 +30,8 @@ const en: Record<string, string> = {
   'scan.section_basic': 'Basic Info',
   'scan.section_temp': 'Temperatures',
   'scan.section_extra': 'Details',
+  'scan.no_tag': 'No tag detected — reposition and retry',
+  'scan.read_failed': 'Read failed — try again',
 
   // write page
   'write.category': 'Category',
@@ -55,9 +57,11 @@ const en: Record<string, string> = {
   'nfc.format_verify_not_zero': 'Format verify failed: block {0} not zero',
   'nfc.write_ff_auth': 'Write sector {0} FF key auth failed',
   'nfc.write_block': 'Write block {0} failed',
+  'nfc.read_failed': 'Read failed — try repositioning the tag',
 
   // tag info card labels
   'tag.uid': 'UID',
+  'tag.uid_copied': 'Copied',
   'tag.weight': 'Weight',
   'tag.length': 'Length',
   'tag.diameter': 'Diameter',
