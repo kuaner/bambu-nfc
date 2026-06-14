@@ -20,6 +20,11 @@
     {#if bluetooth.error}
       <div class="text-red text-xs">{t('conn.failed')}{bluetooth.error}</div>
     {/if}
+    {#if import.meta.env.DEV && bluetooth.lastDisconnectReason}
+      <div class="text-dim text-[0.65rem] max-w-[260px] text-center mt-1">
+        {t('conn.last_disconnect')}<code class="text-accent">{bluetooth.lastDisconnectReason}</code>
+      </div>
+    {/if}
     {#if import.meta.env.DEV}
       <button class="bg-none border border-dashed border-border rounded-md text-dim text-[0.7rem] px-4 py-1.5 cursor-pointer mt-6 transition-colors hover:border-accent hover:text-accent" onclick={() => bluetooth.connectDebug()}>Skip (Debug)</button>
     {/if}

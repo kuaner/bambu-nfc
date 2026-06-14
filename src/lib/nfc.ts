@@ -1,6 +1,6 @@
 import { Buffer as SDKBuffer, DeviceMode } from 'chameleon-ultra.js'
 import type { ChameleonUltra } from 'chameleon-ultra.js'
-import { parseTagDump, type ParsedTag } from './nfc-parser'
+import { parseTagDump, EXPECTED_DUMP_SIZE, type ParsedTag } from './nfc-parser'
 
 const BAMBU_SECTOR_COUNT = 16
 /** Format (16 sectors) + write (16 sectors) */
@@ -9,6 +9,22 @@ export { BAMBU_SECTOR_COUNT }
 const FF_KEY = new Uint8Array([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
 const DEFAULT_ACCESS = new Uint8Array([0xFF, 0x07, 0x80, 0x69])
 const ZERO_BLOCK = new Uint8Array(16)
+
+/**
+ * Blocks required to parse Bambu tag data (see nfc-parser.ts).
+ * Only sectors 0..4 carry data we use; sectors 5..15 hold empty blocks
+ * and the RSA-2048 signature (blocks 40-63) that we never parse.
+ * Reading just these 13 blocks (vs. all 64) cuts ~80% of BLE round-trips.
+ */
+const REQUIRED_BLOCKS: readonly (readonly [number, number])[] = [
+  [0, 3],   // blocks 0,1,2    — UID, tray info, filament type
+  [4, 3],   // blocks 4,5,6    — detailed type, color, temperatures
+  [8, 3],   // blocks 8,9,10   — xcam info, tray uid, spool width
+  [12, 3],  // blocks 12,13,14 — production dates, filament length
+  [16, 1],  // block 16        — extra color info
+]
+/** Sectors that carry data we parse; used by the encrypted-key fallback. */
+const REQUIRED_SECTOR_COUNT = 5
 
 // BALANCED mode defaults from BambuNfcTool NfcCompatibilityConfig
 const AUTH_RETRY_COUNT = 3
@@ -273,13 +289,21 @@ export async function readTag(ultra: ChameleonUltra): Promise<ReadResult | null>
   let dumpData: Uint8Array | null = null
 
   try {
-    const raw = await ultra.mf1Gen1aReadBlocks(0, 64)
-    dumpData = new Uint8Array(raw)
+    // Fast path: Gen1a backdoor. Read only the 13 blocks we actually parse
+    // (sectors 0..4) instead of all 64 — cuts ~80% of BLE round-trips.
+    const buf = new Uint8Array(EXPECTED_DUMP_SIZE)
+    for (const [offset, length] of REQUIRED_BLOCKS) {
+      const raw = await ultra.mf1Gen1aReadBlocks(offset, length)
+      buf.set(new Uint8Array(raw), offset * 16)
+    }
+    dumpData = buf
   } catch {
+    // Fallback: encrypted read with HKDF-derived keys. Only the sectors
+    // we need (0..4) instead of all 16.
     const { keyA, keyB } = await deriveKeys(new Uint8Array(card.uid))
-    const buf = new Uint8Array(1024)
+    const buf = new Uint8Array(EXPECTED_DUMP_SIZE)
     let ok = true
-    for (let s = 0; s < 16; s++) {
+    for (let s = 0; s < REQUIRED_SECTOR_COUNT; s++) {
       let sd: Uint8Array | null = null
       for (const key of [keyA[s], keyB[s]]) {
         try {
@@ -294,7 +318,7 @@ export async function readTag(ultra: ChameleonUltra): Promise<ReadResult | null>
     if (ok) dumpData = buf
   }
 
-  if (!dumpData || dumpData.length !== 1024) return null
+  if (!dumpData || dumpData.length !== EXPECTED_DUMP_SIZE) return null
   const parsed = parseTagDump(dumpData)
   if (!parsed) return null
   return { parsed, uidHex }

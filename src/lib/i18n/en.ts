@@ -12,6 +12,7 @@ const en: Record<string, string> = {
   'conn.connected': 'Connected',
   'conn.not_connected': 'Not connected',
   'conn.disconnect': 'Disconnect',
+  'conn.last_disconnect': 'Last disconnect: ',
 
   // tabs
   'tab.scan': 'Scan',

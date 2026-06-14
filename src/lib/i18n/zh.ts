@@ -12,6 +12,7 @@ const zh: Record<string, string> = {
   'conn.connected': '已连接',
   'conn.not_connected': '未连接',
   'conn.disconnect': '断开连接',
+  'conn.last_disconnect': '上次断开原因：',
 
   // tabs
   'tab.scan': '读取',
