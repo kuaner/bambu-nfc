@@ -53,11 +53,14 @@
   const dryingTemp = $derived(dump?.temps?.drying ?? parsed?.temperatures?.dryingTemp)
   const dryingTime = $derived(dump?.temps?.dryingTime ?? parsed?.temperatures?.dryingTime)
   const date = $derived.by(() => {
-    if (parsed?.shortProductionDate || parsed?.productionDate)
-      return parsed.shortProductionDate || parsed.productionDate
+    // Block 12 (productionDate) is the real production date on ~100% of tags;
+    // block 13 (shortProductionDate) is a firmware-dependent short form that
+    // is sometimes a serial number rather than a date. Prefer block 12.
+    if (parsed?.productionDate || parsed?.shortProductionDate)
+      return parsed.productionDate || parsed.shortProductionDate
     if (dump?.dumpBase64) {
       const p = parseTagDump(Uint8Array.from(atob(dump.dumpBase64), c => c.charCodeAt(0)))
-      if (p?.shortProductionDate || p?.productionDate) return p.shortProductionDate || p.productionDate
+      if (p?.productionDate || p?.shortProductionDate) return p.productionDate || p.shortProductionDate
     }
     return null
   })

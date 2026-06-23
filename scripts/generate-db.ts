@@ -46,6 +46,33 @@ function isDumpFile(filePath: string): boolean {
   return true
 }
 
+/**
+ * Check whether a dump has the Bambu sector-trailer layout.
+ *
+ * Every sector's trailer (block `sector*4 + 3`) must carry the fixed access
+ * bits + user byte `87 87 87 69` at offset 6..9. The import app rejects any
+ * card where a single sector fails this check (counts it as `invalid`), so we
+ * filter such dumps out here to keep the database import-compatible.
+ *
+ * Key A/B are deliberately not checked: third-party readers report Key A as
+ * all-zero due to Mifare Classic hardware masking, so only the access bits are
+ * a reliable "this is a Bambu sector" signal.
+ */
+const BAMBU_SECTOR_COUNT = 16
+const TRAILER_OFFSET = 3 // block 3 of each sector
+const ACCESS_BITS: readonly number[] = [0x87, 0x87, 0x87, 0x69]
+
+function isImportableBambuTag(data: Uint8Array): boolean {
+  for (let sector = 0; sector < BAMBU_SECTOR_COUNT; sector++) {
+    const trailerBlock = (sector * 4 + TRAILER_OFFSET) * 16
+    if (trailerBlock + 10 > data.length) return false
+    for (let i = 0; i < ACCESS_BITS.length; i++) {
+      if (data[trailerBlock + 6 + i] !== ACCESS_BITS[i]) return false
+    }
+  }
+  return true
+}
+
 const VALID_CATEGORIES = ['PLA', 'PETG', 'ABS', 'ASA', 'PA', 'PC', 'TPU', 'Support Material']
 
 function parsePathSegments(filePath: string): { category: string; material: string; color: string } | null {
@@ -76,6 +103,7 @@ function main(): void {
   const categories: Record<string, any> = {}
   let totalDumps = 0
   let skipped = 0
+  let invalidTrailers = 0
   const errors: { file: string; error: string }[] = []
 
   for (const filePath of binFiles) {
@@ -83,7 +111,10 @@ function main(): void {
       const data = fs.readFileSync(filePath)
       if (data.length !== EXPECTED_DUMP_SIZE) { skipped++; continue }
 
-      const tag = parseTagDump(new Uint8Array(data))
+      const bytes = new Uint8Array(data)
+      if (!isImportableBambuTag(bytes)) { invalidTrailers++; continue }
+
+      const tag = parseTagDump(bytes)
       if (!tag) { skipped++; continue }
 
       const pathInfo = parsePathSegments(filePath)
@@ -153,11 +184,12 @@ function main(): void {
   const sizeMB = (fs.statSync(OUTPUT_FILE).size / 1024 / 1024).toFixed(1)
 
   console.log('\nResults:')
-  console.log('  Total dumps: ' + totalDumps)
-  console.log('  Categories:  ' + catKeys.length)
-  console.log('  Skipped:     ' + skipped)
-  console.log('  Errors:      ' + errors.length)
-  console.log('  Output:      ' + OUTPUT_FILE + ' (' + sizeMB + ' MB)')
+  console.log('  Total dumps:        ' + totalDumps)
+  console.log('  Categories:         ' + catKeys.length)
+  console.log('  Skipped:            ' + skipped)
+  console.log('  Invalid trailers:   ' + invalidTrailers + ' (not 87878769 — would be rejected by import)')
+  console.log('  Errors:             ' + errors.length)
+  console.log('  Output:             ' + OUTPUT_FILE + ' (' + sizeMB + ' MB)')
 
   if (errors.length > 0) {
     console.log('\nErrors:')

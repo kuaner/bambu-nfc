@@ -74,14 +74,40 @@ function bytesToAscii(buf: Uint8Array): string {
   return new TextDecoder('ascii').decode(buf).replace(/\x00/g, ' ').trim()
 }
 
+/**
+ * Parse a Bambu date field into `YYYY-MM-DD`, or `''` if it isn't a date.
+ *
+ * Real tags encode the date in several ways (sampled across 3604 dumps):
+ *   block 12 — almost always "YYYY_MM_DD_HH_mm" (the real production date).
+ *   block 13 — varies by firmware: "YYYYMMDD", "YY_MM_DD_HH",
+ *              "A" + YYMMDD + 4-digit serial, or a non-date serial number.
+ *
+ * Unrecognised values (serial numbers, blanks) return '' rather than being
+ * echoed back — matches the import app, which leaves the field empty when
+ * extraction fails.
+ */
 function formatBambuDate(raw: string): string {
-  // Format: "YYYY_MM_DD_HH_mm" or "YY_MM_DD_HH"
-  const parts = raw.split('_')
+  const s = raw.trim()
+  if (!s) return ''
+
+  // "YYYY_MM_DD_HH_mm" (block 12) or "YY_MM_DD_HH" (block 13)
+  const parts = s.split('_')
   if (parts.length >= 3) {
     const y = parts[0].length === 2 ? '20' + parts[0] : parts[0]
     return `${y}-${parts[1]}-${parts[2]}`
   }
-  return raw
+
+  // "YYYYMMDD" (8 digits, no separators)
+  if (/^\d{8}$/.test(s)) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`
+
+  // "A" + YYMMDD + 4-digit serial — firmware variant where the leading "A"
+  // marks this block as a date and the trailing 4 digits are a spool/batch id.
+  if (/^A\d{10}$/.test(s)) {
+    const d = s.slice(1) // YYMMDD????
+    return `20${d.slice(0, 2)}-${d.slice(2, 4)}-${d.slice(4, 6)}`
+  }
+
+  return ''
 }
 
 function readUint16LE(buf: Uint8Array, offset: number): number {
