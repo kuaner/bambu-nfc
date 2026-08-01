@@ -44,7 +44,8 @@ src/
   data/
     bambu-tags.json           # 标签数据库（generate-db 生成，打包进 JS）
 scripts/
-  generate-db.ts              # 构建脚本：浅克隆 RFID 库 → 生成 JSON → 清理
+  generate-db.ts              # 构建脚本：浅克隆 RFID 库 + 官方颜色库 → 重归类 → 生成 JSON → 清理
+  bambu-color-db.json         # Bambu Studio 官方颜色库快照（构建时按网络自动刷新）
 docs/
   architecture.md             # 应用架构、核心流程、API、设计系统
   nfc-tag-format.md           # Block 布局、颜色编码、密钥派生
@@ -57,7 +58,7 @@ docs/
 npm run generate-db
 ```
 
-自动浅克隆 [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library)，解析所有 dump 生成 `src/data/bambu-tags.json`，完成后自动清理临时目录。
+自动浅克隆 [Bambu-Lab-RFID-Library](https://github.com/queengooborg/Bambu-Lab-RFID-Library)，并加载 Bambu Studio 官方颜色库（`scripts/bambu-color-db.json`，每次运行尝试从网络刷新，失败回退本地快照）。**归类以标签自身数据为准**：材料取 block 4（detailed filament type），颜色名用标签颜色 hex 在官方颜色库反查——这样可纠正上游目录的错误归类/命名，对齐 Bambu 官方命名。生成 `src/data/bambu-tags.json` 后自动清理临时目录。
 
 ## 发布流程
 
@@ -65,7 +66,7 @@ npm run generate-db
 2. 提交改动：`git add -A && git commit -m "..." && git push origin main`
 3. 打 tag 并推送：`git tag v1.x.x && git push origin v1.x.x`
 4. tag push 自动触发 GitHub Actions（`.github/workflows/deploy.yml`）：
-   - 浅克隆 RFID 库 → 生成标签数据
+   - 浅克隆 RFID 库 + 加载官方颜色库 → 按标签数据重归类 → 生成标签数据
    - `npm run build`（带 `GITHUB_PAGES=1` 环境变量设置 base URL）
    - 自动部署到 GitHub Pages
    - 自动创建 GitHub Release（基于 commit history 生成 release notes）
