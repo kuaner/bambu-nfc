@@ -10,6 +10,7 @@ interface TagDB {
       filamentType: string
       colors: Record<string, {
         displayName: string
+        displayNameZh: string | null
         colorCSS: string
         colorHex: string
         secondaryColorCSS: string | null
@@ -39,11 +40,13 @@ export interface LibraryMatch {
   category: string
   material: string
   color: string
+  colorZh: string | null
   dump: TagDump
 }
 
 export interface ColorEntry {
   name: string
+  nameZh: string | null
   colorCSS: string
   secondaryColorCSS: string | null
   dumpCount: number
@@ -75,6 +78,7 @@ class TagDbStore {
     if (!mat) return []
     return Object.entries(mat.colors).map(([name, c]) => ({
       name,
+      nameZh: c.displayNameZh,
       colorCSS: c.colorCSS,
       secondaryColorCSS: c.secondaryColorCSS,
       dumpCount: c.dumps.length,
@@ -85,7 +89,7 @@ class TagDbStore {
   findInLibrary(parsed: ParsedTag, uid?: string): string | null {
     const uidMatch = this.findDumpByUid(uid ?? parsed.uid)
     if (uidMatch) {
-      return `${uidMatch.category} / ${uidMatch.material} / ${uidMatch.color}`
+      return `${uidMatch.category} / ${uidMatch.material} / ${colorLabel(uidMatch.color, uidMatch.colorZh)}`
     }
     for (const c in tagDB.categories) {
       for (const m in tagDB.categories[c].materials) {
@@ -103,7 +107,7 @@ class TagDbStore {
         for (const color in mat.colors) {
           for (const dump of mat.colors[color].dumps) {
             if (dump.uid.toUpperCase() === normalized) {
-              return { category, material, color, dump }
+              return { category, material, color, colorZh: mat.colors[color].displayNameZh, dump }
             }
           }
         }
@@ -114,3 +118,12 @@ class TagDbStore {
 }
 
 export const tagDb = new TagDbStore()
+
+/**
+ * Render a colour name showing both Chinese and English when both are
+ * available, e.g. "蓝灰 / Blue Gray". Falls back to the English name alone
+ * when no official Chinese name was resolved.
+ */
+export function colorLabel(name: string, nameZh: string | null | undefined): string {
+  return nameZh ? `${nameZh} / ${name}` : name
+}

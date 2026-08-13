@@ -213,10 +213,10 @@ const MULTI_COLOR_TYPES = new Set(['渐变色', '多拼色'])
 function lookupColorName(
   tag: ParsedTag,
   db: ColorDBEntry[],
-): { name: string; exact: boolean } | null {
+): { name: string; nameZh: string | null; exact: boolean } | null {
   const sig = tagColorSignature(tag)
   const wantMulti = tag.color.count >= 2
-  let hexOnly: string | null = null
+  let hexOnly: { name: string; nameZh: string | null } | null = null
 
   for (const entry of db) {
     const isMulti = MULTI_COLOR_TYPES.has(entry.fila_color_type)
@@ -226,11 +226,13 @@ function lookupColorName(
     if (entrySig.some((c, i) => c !== sig[i])) continue
     // Colour signature matches.
     if (entry.fila_type === tag.detailedFilamentType && entry.fila_color_name.en) {
-      return { name: entry.fila_color_name.en, exact: true }
+      return { name: entry.fila_color_name.en, nameZh: entry.fila_color_name.zh ?? null, exact: true }
     }
-    if (!hexOnly && entry.fila_color_name.en) hexOnly = entry.fila_color_name.en
+    if (!hexOnly && entry.fila_color_name.en) {
+      hexOnly = { name: entry.fila_color_name.en, nameZh: entry.fila_color_name.zh ?? null }
+    }
   }
-  return hexOnly ? { name: hexOnly, exact: false } : null
+  return hexOnly ? { ...hexOnly, exact: false } : null
 }
 
 // --- Path fallback ---
@@ -321,6 +323,7 @@ function main(): void {
       if (!categories[category].materials[material].colors[color]) {
         categories[category].materials[material].colors[color] = {
           displayName: color,
+          displayNameZh: official?.nameZh ?? null,
           colorCSS: tag.color.primary.css,
           colorHex: tag.color.primary.hex,
           secondaryColorCSS: tag.color.secondary ? tag.color.secondary.css : null,

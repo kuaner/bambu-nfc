@@ -1,6 +1,6 @@
 <script lang="ts">
   import { bluetooth } from '../stores/bluetooth.svelte'
-  import { tagDb } from '../stores/tag-db.svelte'
+  import { tagDb, colorLabel } from '../stores/tag-db.svelte'
   import { writeStore } from '../stores/write.svelte'
   import { writeTag, WRITE_PROGRESS_TOTAL, BAMBU_SECTOR_COUNT } from '../lib/nfc'
   import { formatNfcError } from '../lib/nfc-errors'
@@ -169,8 +169,8 @@
             style={c.secondaryColorCSS
               ? `background:linear-gradient(135deg, ${c.colorCSS} 50%, ${c.secondaryColorCSS} 50%)`
               : `background:${c.colorCSS}`}
-            aria-label={c.name}
-            title={c.name}
+            aria-label={colorLabel(c.name, c.nameZh)}
+            title={colorLabel(c.name, c.nameZh)}
             onclick={() => writeStore.selectColor(c.name)}
           >
             {#if c.name === writeStore.selectedColorKey}
@@ -179,7 +179,7 @@
               </div>
             {/if}
             <!-- Name tooltip on hover -->
-            <span class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[0.55rem] text-text whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-card px-1.5 py-0.5 rounded">{c.name}</span>
+            <span class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[0.55rem] text-text whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-card px-1.5 py-0.5 rounded">{colorLabel(c.name, c.nameZh)}</span>
           </button>
         {/each}
       </div>
@@ -190,7 +190,7 @@
 
   {#if writeStore.selectedDump && material}
     <TagInfoCard
-      title={writeStore.selectedMaterial + ' / ' + (writeStore.selectedColorKey ?? '')}
+      title={writeStore.selectedMaterial + ' / ' + (colorEntry ? colorLabel(colorEntry.name, colorEntry.nameZh) : (writeStore.selectedColorKey ?? ''))}
       color={colorEntry ? { css: colorEntry.colorCSS, secondaryCSS: colorEntry.secondaryColorCSS } : undefined}
       dump={writeStore.selectedDump}
       flash={cardFlash}

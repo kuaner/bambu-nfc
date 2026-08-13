@@ -20,6 +20,7 @@ npm run generate-db
 - **分类（Category）**：由 material/block 2 短码映射到八大分类，仅在标签字段缺失时回退到目录。
 - **颜色名（Color）**：用 dump 颜色 hex（block 5 主色 + block 16 辅色）在 [Bambu Studio 官方颜色库](https://github.com/bambulab/BambuStudio/blob/master/resources/profiles/BBL/filament/filaments_color_codes.json) 中精确反查（hex + material 双重匹配），取官方英文名。单色只匹配 `单色` 条目，多色只匹配 `渐变色`/`多拼色`。查不到时回退目录原名。
 - **颜色值（colorHex/colorCSS）**：始终来自 dump 字节，与归类无关。
+- **中文名（displayNameZh）**：精确匹配命中官方库时一并取出 `fila_color_name.zh`；未命中则为 `null`（UI 回退只显示英文名）。当前覆盖率约 96%。
 
 这套逻辑移植自 NickWaterton 的 `colordb.py` / `fix_library.py`（见 [PR #79/#80/#81](https://github.com/queengooborg/Bambu-Lab-RFID-Library/pull/81)），但只做重归类与改名，不删除/隔离任何 dump，确保 UID 识别覆盖率不下降。
 
@@ -42,6 +43,7 @@ npm run generate-db
           "colors": {
             "White": {
               "displayName": "White",
+              "displayNameZh": "白色",
               "colorCSS": "rgb(255,255,255)",
               "colorHex": "#ffffff",
               "secondaryColorCSS": null,
