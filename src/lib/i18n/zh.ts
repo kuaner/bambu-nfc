@@ -39,7 +39,7 @@ const zh: Record<string, string> = {
   'write.color': '颜色',
   'write.select': '-- 请选择 --',
   'write.select_material': '-- 请先选择材料 --',
-  'write.shuffle': '换一个',
+  'write.next': '下一个',
   'write.button': '写入标签',
   'write.empty_text': '请在上方选择耗材',
   'write.done': '完成！',

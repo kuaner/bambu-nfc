@@ -1,4 +1,4 @@
-import type { ParsedTag } from '../lib/nfc-parser'
+import { dumpProductionSortKey, EXPECTED_DUMP_SIZE, type ParsedTag } from '../lib/nfc-parser'
 import tagData from '../data/bambu-tags.json'
 
 interface TagDB {
@@ -82,7 +82,7 @@ class TagDbStore {
       colorCSS: c.colorCSS,
       secondaryColorCSS: c.secondaryColorCSS,
       dumpCount: c.dumps.length,
-      dumps: c.dumps
+      dumps: sortDumpsNewestFirst(c.dumps)
     }))
   }
 
@@ -126,4 +126,38 @@ export const tagDb = new TagDbStore()
  */
 export function colorLabel(name: string, nameZh: string | null | undefined): string {
   return nameZh ? `${nameZh} / ${name}` : name
+}
+
+const dumpDateKeyCache = new WeakMap<TagDump, string>()
+
+function dumpDateKey(dump: TagDump): string {
+  const cached = dumpDateKeyCache.get(dump)
+  if (cached !== undefined) return cached
+  let key = ''
+  try {
+    const bytes = Uint8Array.from(atob(dump.dumpBase64), c => c.charCodeAt(0))
+    if (bytes.length === EXPECTED_DUMP_SIZE) key = dumpProductionSortKey(bytes)
+  } catch {
+    // Corrupt dumpBase64 — treat as undated so it sorts last.
+  }
+  dumpDateKeyCache.set(dump, key)
+  return key
+}
+
+const sortedDumpsCache = new WeakMap<TagDump[], TagDump[]>()
+
+/** Same-color dumps, newest production time first. Undated dumps go last. */
+export function sortDumpsNewestFirst(dumps: TagDump[]): TagDump[] {
+  const cached = sortedDumpsCache.get(dumps)
+  if (cached) return cached
+  const sorted = [...dumps].sort((a, b) => {
+    const ka = dumpDateKey(a)
+    const kb = dumpDateKey(b)
+    if (ka === kb) return a.uid.localeCompare(b.uid)
+    if (!ka) return 1
+    if (!kb) return -1
+    return kb.localeCompare(ka)
+  })
+  sortedDumpsCache.set(dumps, sorted)
+  return sorted
 }

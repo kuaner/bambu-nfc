@@ -39,7 +39,7 @@ const en: Record<string, string> = {
   'write.color': 'Color',
   'write.select': '-- Select --',
   'write.select_material': '-- Select material --',
-  'write.shuffle': 'Shuffle',
+  'write.next': 'Next',
   'write.button': 'Write to Tag',
   'write.empty_text': 'Select a filament above',
   'write.done': 'Done!',

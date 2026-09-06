@@ -5,7 +5,7 @@
   import { writeTag, WRITE_PROGRESS_TOTAL, BAMBU_SECTOR_COUNT } from '../lib/nfc'
   import { formatNfcError } from '../lib/nfc-errors'
   import { t } from '../lib/i18n'
-  import { PenLine, Shuffle, Check } from '@lucide/svelte'
+  import { PenLine, ChevronRight, Check } from '@lucide/svelte'
   import TagInfoCard from './TagInfoCard.svelte'
   import EmptyState from './EmptyState.svelte'
 
@@ -221,11 +221,11 @@
       {#if (colorEntry?.dumpCount ?? 0) > 1}
         <button
           class="flex items-center justify-center gap-1.5 px-3 py-3 border border-border rounded-[10px] text-xs font-semibold cursor-pointer transition-colors bg-card text-dim hover:border-accent hover:text-accent shrink-0 disabled:opacity-35 disabled:cursor-not-allowed"
-          onclick={() => { writeStore.reshuffleDump(); cardFlash = true; setTimeout(() => cardFlash = false, 450) }}
+          onclick={() => { writeStore.nextDump(); cardFlash = true; setTimeout(() => cardFlash = false, 450) }}
           disabled={writeStore.isWriting}
         >
-          <Shuffle size={14} />
-          {t('write.shuffle')}
+          <ChevronRight size={14} />
+          {t('write.next')}
         </button>
       {/if}
     </div>

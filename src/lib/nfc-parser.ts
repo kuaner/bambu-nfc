@@ -87,6 +87,16 @@ function bytesToAscii(buf: Uint8Array): string {
  * extraction fails.
  */
 function formatBambuDate(raw: string): string {
+  const key = bambuDateSortKey(raw)
+  return key ? key.slice(0, 10) : ''
+}
+
+/**
+ * Parse a Bambu date field into a sortable `YYYY-MM-DDTHH:mm` key, or `''`.
+ * Keeps hours/minutes from block 12 (`YYYY_MM_DD_HH_mm`) so same-day dumps
+ * still order by time. Missing time parts default to `00:00`.
+ */
+export function bambuDateSortKey(raw: string): string {
   const s = raw.trim()
   if (!s) return ''
 
@@ -94,20 +104,30 @@ function formatBambuDate(raw: string): string {
   const parts = s.split('_')
   if (parts.length >= 3) {
     const y = parts[0].length === 2 ? '20' + parts[0] : parts[0]
-    return `${y}-${parts[1]}-${parts[2]}`
+    const hh = parts[3] && /^\d{2}$/.test(parts[3]) ? parts[3] : '00'
+    const mm = parts[4] && /^\d{2}$/.test(parts[4]) ? parts[4] : '00'
+    return `${y}-${parts[1]}-${parts[2]}T${hh}:${mm}`
   }
 
   // "YYYYMMDD" (8 digits, no separators)
-  if (/^\d{8}$/.test(s)) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`
+  if (/^\d{8}$/.test(s)) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T00:00`
 
   // "A" + YYMMDD + 4-digit serial — firmware variant where the leading "A"
   // marks this block as a date and the trailing 4 digits are a spool/batch id.
   if (/^A\d{10}$/.test(s)) {
     const d = s.slice(1) // YYMMDD????
-    return `20${d.slice(0, 2)}-${d.slice(2, 4)}-${d.slice(4, 6)}`
+    return `20${d.slice(0, 2)}-${d.slice(2, 4)}-${d.slice(4, 6)}T00:00`
   }
 
   return ''
+}
+
+/** Production-time sort key for a 1024-byte dump (block 12, then block 13). */
+export function dumpProductionSortKey(data: Uint8Array): string {
+  if (data.length !== EXPECTED_DUMP_SIZE) return ''
+  const block12 = bytesToAscii(data.subarray(12 * 16, 13 * 16))
+  const block13 = bytesToAscii(data.subarray(13 * 16, 14 * 16))
+  return bambuDateSortKey(block12) || bambuDateSortKey(block13)
 }
 
 function readUint16LE(buf: Uint8Array, offset: number): number {

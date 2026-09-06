@@ -50,7 +50,7 @@ class WriteStore {
     if (!entry?.dumps.length) return
     this.selectedColorKey = colorName
     this.colorDropdownOpen = false
-    this.reshuffleDump()
+    this.selectedDump = entry.dumps[0]
   }
 
   selectFromLibrary(category: string, material: string, color: string, dump: TagDump): void {
@@ -64,10 +64,12 @@ class WriteStore {
     this.writeError = null
   }
 
-  reshuffleDump(): void {
+  nextDump(): void {
     const entry = this.colors.find(c => c.name === this.selectedColorKey)
     if (!entry?.dumps.length) return
-    this.selectedDump = entry.dumps[Math.floor(Math.random() * entry.dumps.length)]
+    const dumps = entry.dumps
+    const idx = dumps.findIndex(d => d.uid === this.selectedDump?.uid)
+    this.selectedDump = dumps[idx < 0 ? 0 : (idx + 1) % dumps.length]
   }
 
   toggleColorDropdown(): void {

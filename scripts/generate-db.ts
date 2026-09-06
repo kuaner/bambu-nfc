@@ -21,7 +21,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
-import { parseTagDump, EXPECTED_DUMP_SIZE, type ParsedTag } from '../src/lib/nfc-parser.js'
+import { parseTagDump, dumpProductionSortKey, EXPECTED_DUMP_SIZE, type ParsedTag } from '../src/lib/nfc-parser.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -364,7 +364,18 @@ function main(): void {
       const mat = cat.materials[matKey]
       const sortedColors: Record<string, any> = {}
       const colorKeys = Object.keys(mat.colors).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-      for (const ck of colorKeys) sortedColors[ck] = mat.colors[ck]
+      for (const ck of colorKeys) {
+        const color = mat.colors[ck]
+        color.dumps.sort((a: { dumpBase64: string; uid: string }, b: { dumpBase64: string; uid: string }) => {
+          const ka = dumpProductionSortKey(Uint8Array.from(Buffer.from(a.dumpBase64, 'base64')))
+          const kb = dumpProductionSortKey(Uint8Array.from(Buffer.from(b.dumpBase64, 'base64')))
+          if (ka === kb) return a.uid.localeCompare(b.uid)
+          if (!ka) return 1
+          if (!kb) return -1
+          return kb.localeCompare(ka)
+        })
+        sortedColors[ck] = color
+      }
       sortedMaterials[matKey] = { ...mat, colors: sortedColors }
     }
     sortedCategories[catKey] = { materials: sortedMaterials }
