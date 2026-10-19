@@ -40,6 +40,11 @@ const en: Record<string, string> = {
   'scan.section_extra': 'Details',
   'scan.no_tag': 'No tag detected — reposition and retry',
   'scan.read_failed': 'Read failed — try again',
+  'scan.history': 'History ({0})',
+  'scan.history_clear': 'Clear',
+  'scan.history_remove': 'Remove this record',
+  'scan.hours_ago': '{0}h ago',
+  'scan.days_ago': '{0}d ago',
 
   // write page
   'write.category': 'Category',

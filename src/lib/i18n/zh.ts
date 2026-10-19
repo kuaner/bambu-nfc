@@ -40,6 +40,11 @@ const zh: Record<string, string> = {
   'scan.section_extra': '其他信息',
   'scan.no_tag': '未检测到标签，请重新放置后再试',
   'scan.read_failed': '读取失败，请重试',
+  'scan.history': '读取历史 ({0})',
+  'scan.history_clear': '清空',
+  'scan.history_remove': '删除该记录',
+  'scan.hours_ago': '{0} 小时前',
+  'scan.days_ago': '{0} 天前',
 
   // write page
   'write.category': '类别',

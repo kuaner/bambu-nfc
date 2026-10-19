@@ -36,6 +36,7 @@ src/
   stores/
     bluetooth.svelte.ts       # 蓝牙连接状态
     tag-db.svelte.ts          # 标签数据库（直接 import JSON 打包进 JS）
+    scan.svelte.ts            # 连续读取历史（localStorage 持久化，UID 去重）
     write.svelte.ts           # 写入页级联选择状态
     written.svelte.ts         # 已写卡颜色记录（localStorage 持久化）
   components/                 # UI 组件

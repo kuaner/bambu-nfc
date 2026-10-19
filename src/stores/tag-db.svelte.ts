@@ -99,22 +99,65 @@ class TagDbStore {
     return null
   }
 
+  #uidCache = new Map<string, LibraryMatch | null>()
+
   findDumpByUid(uid: string): LibraryMatch | null {
     const normalized = uid.toUpperCase()
+    if (this.#uidCache.has(normalized)) return this.#uidCache.get(normalized)!
+    let match: LibraryMatch | null = null
     for (const category in tagDB.categories) {
       for (const material in tagDB.categories[category].materials) {
         const mat = tagDB.categories[category].materials[material]
         for (const color in mat.colors) {
           for (const dump of mat.colors[color].dumps) {
             if (dump.uid.toUpperCase() === normalized) {
-              return { category, material, color, colorZh: mat.colors[color].displayNameZh, dump }
+              match = { category, material, color, colorZh: mat.colors[color].displayNameZh, dump }
+              break
             }
           }
+          if (match) break
+        }
+        if (match) break
+      }
+      if (match) break
+    }
+    this.#uidCache.set(normalized, match)
+    return match
+  }
+
+  /**
+   * Resolve a colour label for a scanned tag from its own colour bytes — the
+   * same data-driven lookup the DB build performs: exact (material + colour
+   * signature) match first, hex-only match across the library as fallback.
+   * Covers tags whose UID is not in the library (custom / newer dumps).
+   */
+  findColorBySignature(parsed: ParsedTag): { name: string; nameZh: string | null } | null {
+    const sig = [hex6(parsed.color.primary.hex)]
+    if (parsed.color.count >= 2 && parsed.color.secondary) sig.push(hex6(parsed.color.secondary.hex))
+    if (!sig[0]) return null
+    const detailed = parsed.detailedFilamentType.toLowerCase()
+    let hexOnly: { name: string; nameZh: string | null } | null = null
+    for (const category in tagDB.categories) {
+      for (const material in tagDB.categories[category].materials) {
+        const mat = tagDB.categories[category].materials[material]
+        for (const color in mat.colors) {
+          const entry = mat.colors[color]
+          const entrySig = [hex6(entry.colorHex)]
+          if (entry.secondaryColorCSS) entrySig.push(hex6(entry.secondaryColorCSS))
+          if (entrySig.length !== sig.length) continue
+          if (entrySig.some((h, i) => h !== sig[i])) continue
+          if (material.toLowerCase() === detailed) return { name: color, nameZh: entry.displayNameZh }
+          if (!hexOnly) hexOnly = { name: color, nameZh: entry.displayNameZh }
         }
       }
     }
-    return null
+    return hexOnly
   }
+}
+
+/** "#5b6579ff" / "#5B6579" → "5B6579" — colour bytes may carry an alpha channel. */
+function hex6(hex: string): string {
+  return hex.replace(/^#/, '').toUpperCase().slice(0, 6)
 }
 
 export const tagDb = new TagDbStore()

@@ -9,12 +9,14 @@
   let {
     color,
     title,
+    colorName = null,
     dump = null,
     parsed = null,
     flash = false
   }: {
     color?: { css: string; secondaryCSS?: string | null }
     title: string
+    colorName?: string | null
     dump?: TagDump | null
     parsed?: ParsedTag | null
     flash?: boolean
@@ -73,7 +75,12 @@
       color={color?.css || parsed?.color?.primary?.css || ''}
       secondary={color?.secondaryCSS || parsed?.color?.secondary?.css}
     />
-    <span class="font-semibold text-sm truncate">{title}</span>
+    <div class="min-w-0">
+      <div class="font-semibold text-sm truncate">{title}</div>
+      {#if colorName}
+        <div class="text-[0.65rem] text-dim truncate">{colorName}</div>
+      {/if}
+    </div>
   </div>
 
   <!-- Info chips -->
