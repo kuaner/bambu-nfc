@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
 
       - name: Generate bambu-tags.json
+        env:
+          APP_SHARED_INSTALL_ID: ${{ secrets.APP_SHARED_INSTALL_ID }}
+          APP_SHARED_TAG_PACKAGE_KEY: ${{ secrets.APP_SHARED_TAG_PACKAGE_KEY }}
         run: npm run generate-db
 
       - run: npm run build

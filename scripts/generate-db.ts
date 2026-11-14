@@ -12,10 +12,11 @@
  * at build time so the emitted database stays aligned with official Bambu
  * naming without depending on a cleaned upstream fork.
  *
- * After the upstream scan, `scripts/app-shared-extra.json` is merged in. That
- * snapshot carries dumps from the Android app's shared tag library for
- * material/colour pairs the upstream library does not have; existing pairs are
- * skipped so the upstream stays authoritative. See docs/tag-db.md.
+ * After the upstream scan, the Android app's current shared tag library is
+ * downloaded and decrypted in-process (credentials come from
+ * APP_SHARED_INSTALL_ID / APP_SHARED_TAG_PACKAGE_KEY). Dumps are merged only
+ * for material/colour pairs the upstream library does not have; existing
+ * pairs stay authoritative. Nothing is committed between builds.
  *
  * Usage: node scripts/generate-db.js [library-path] [output-path]
  *   library-path: path to bambu-rfid-library (default: ./bambu-rfid-library)
@@ -26,7 +27,19 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
-import { parseTagDump, dumpProductionSortKey, EXPECTED_DUMP_SIZE, type ParsedTag } from '../src/lib/nfc-parser.js'
+import { parseTagDump, dumpProductionSortKey, EXPECTED_DUMP_SIZE } from '../src/lib/nfc-parser.js'
+import { loadAppSharedDumps, type AppSharedDump } from './lib/app-shared.js'
+import {
+  isImportableBambuTag,
+  VALID_CATEGORIES,
+  FILAMENT_TYPE_TO_CATEGORY,
+  DETAILED_TYPE_TO_CATEGORY,
+  canonicalizeDetailedType,
+  loadColorDB,
+  lookupColorName,
+  lookupAppColorName,
+  comboKey,
+} from './lib/tag-db.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -36,36 +49,6 @@ const REPO_URL = 'https://github.com/queengooborg/Bambu-Lab-RFID-Library.git'
 const LIBRARY_DIR = process.argv[2] || path.join(ROOT, 'bambu-rfid-library')
 const OUTPUT_FILE = process.argv[3] || path.join(ROOT, 'src', 'data', 'bambu-tags.json')
 const shouldCleanup = !process.argv[2]
-
-/** Official Bambu Studio colour database (live source). */
-const COLOR_DB_URL =
-  'https://raw.githubusercontent.com/bambulab/BambuStudio/master/resources/profiles/BBL/filament/filaments_color_codes.json'
-/** Bundled snapshot, refreshed from COLOR_DB_URL on each run when the network is available. */
-const COLOR_DB_PATH = path.join(__dirname, 'bambu-color-db.json')
-
-/** New-colour dump snapshot extracted from the Android app's shared library. */
-const APP_EXTRA_PATH = path.join(__dirname, 'app-shared-extra.json')
-
-interface AppExtraDump {
-  uid?: string
-  dumpBase64: string
-  category?: string
-  material?: string
-  color?: string
-  colorZh?: string
-  materialType?: string
-}
-
-function loadAppExtras(): AppExtraDump[] {
-  try {
-    if (!fs.existsSync(APP_EXTRA_PATH)) return []
-    const raw = JSON.parse(fs.readFileSync(APP_EXTRA_PATH, 'utf8'))
-    return Array.isArray(raw.dumps) ? raw.dumps : []
-  } catch (e: any) {
-    console.warn(`App shared extras ignored (${APP_EXTRA_PATH}): ${e.message}`)
-    return []
-  }
-}
 
 // --- Directory scanning ---
 
@@ -102,183 +85,6 @@ function isDumpFile(filePath: string): boolean {
  * all-zero due to Mifare Classic hardware masking, so only the access bits are
  * a reliable "this is a Bambu sector" signal.
  */
-const BAMBU_SECTOR_COUNT = 16
-const TRAILER_OFFSET = 3 // block 3 of each sector
-const ACCESS_BITS: readonly number[] = [0x87, 0x87, 0x87, 0x69]
-
-function isImportableBambuTag(data: Uint8Array): boolean {
-  for (let sector = 0; sector < BAMBU_SECTOR_COUNT; sector++) {
-    const trailerBlock = (sector * 4 + TRAILER_OFFSET) * 16
-    if (trailerBlock + 10 > data.length) return false
-    for (let i = 0; i < ACCESS_BITS.length; i++) {
-      if (data[trailerBlock + 6 + i] !== ACCESS_BITS[i]) return false
-    }
-  }
-  return true
-}
-
-const VALID_CATEGORIES = ['PLA', 'PETG', 'ABS', 'ASA', 'PA', 'PC', 'TPU', 'Support Material']
-
-/**
- * Map a tag's short filament type (block 2, the NFC-internal code) to one of
- * the eight high-level categories. The block-2 code is a vendor shorthand that
- * does not line up 1:1 with the category names, so it needs an explicit table.
- * Tags whose code is absent here fall back to the upstream directory's
- * category via {@link parsePathSegments}.
- */
-const FILAMENT_TYPE_TO_CATEGORY: Record<string, string> = {
-  PLA: 'PLA',
-  'PLA-CF': 'PLA',
-  PETG: 'PETG',
-  'PETG-CF': 'PETG',
-  ABS: 'ABS',
-  'ABS-GF': 'ABS',
-  ASA: 'ASA',
-  'ASA Aero': 'ASA',
-  'ASA-CF': 'ASA',
-  PC: 'PC',
-  'PA-GF': 'PA',
-  'PA-CF': 'PA',
-  'TPU-AMS': 'TPU',
-  // Support codes — both the dedicated shorthands and the generic "Support".
-  'PLA-S': 'Support Material',
-  'ABS-S': 'Support Material',
-  'PA-S': 'Support Material',
-  PVA: 'Support Material',
-  Support: 'Support Material',
-}
-
-/**
- * Map a tag's detailed filament type (block 4) to a category. This is the
- * primary path: block 4 carries the real material name (e.g. "PLA Silk+",
- * "PETG HF") so we can usually classify without touching the directory.
- */
-const DETAILED_TYPE_TO_CATEGORY: Record<string, string> = {}
-/** Lowercased block-4 string → canonical registered spelling. */
-const DETAILED_TYPE_CANONICAL = new Map<string, string>()
-function registerDetailedType(detailed: string, category: string): void {
-  DETAILED_TYPE_TO_CATEGORY[detailed] = category
-  DETAILED_TYPE_CANONICAL.set(detailed.toLowerCase(), detailed)
-}
-
-/**
- * Tags occasionally carry a casing variant of a known material (observed:
- * "Support For PLA" on one tag vs "Support for PLA" on the other 57), and
- * keying materials by the raw block-4 string would split them into duplicate
- * groups. Fold anything that differs only by case onto the registered
- * spelling; unknown strings pass through untouched.
- */
-function canonicalizeDetailedType(raw: string): string {
-  return DETAILED_TYPE_CANONICAL.get(raw.toLowerCase()) ?? raw
-}
-// The detailed-filament-type namespace is shared with the official colour DB
-// (its `fila_type` field), so enumerating the known materials keeps the two
-// consistent. Anything unrecognised falls back to the block-2 code or the
-// directory layout.
-for (const m of [
-  'PLA Aero', 'PLA Basic', 'PLA Galaxy', 'PLA Glow', 'PLA Lite', 'PLA Marble',
-  'PLA Matte', 'PLA Metal', 'PLA Pure', 'PLA Silk', 'PLA Silk+', 'PLA Sparkle',
-  'PLA Tough', 'PLA Tough+', 'PLA Translucent', 'PLA Wood', 'PLA Dynamic',
-  'PLA-CF', 'PLA Palette',
-]) registerDetailedType(m, 'PLA')
-for (const m of ['PETG Basic', 'PETG HF', 'PETG Translucent', 'PETG Matte', 'PETG-CF']) registerDetailedType(m, 'PETG')
-for (const m of ['ABS', 'ABS-GF']) registerDetailedType(m, 'ABS')
-for (const m of ['ASA', 'ASA Aero', 'ASA-CF']) registerDetailedType(m, 'ASA')
-registerDetailedType('PC', 'PC')
-registerDetailedType('PC FR', 'PC')
-for (const m of ['PA6-GF', 'PA6-CF', 'PAHT-CF', 'PA-CF']) registerDetailedType(m, 'PA')
-for (const m of ['TPU for AMS', 'TPU 95A HF', 'TPU 95A', 'TPU 90A', 'TPU 85A']) registerDetailedType(m, 'TPU')
-for (const m of [
-  'Support for PLA', 'Support for PLA/PETG', 'Support for PA/PET', 'Support for ABS',
-  'Support G', 'Support W', 'Support For PA', 'Support for PA', 'PVA',
-]) registerDetailedType(m, 'Support Material')
-
-// --- Official colour database ---
-
-interface ColorDBEntry {
-  fila_type: string
-  fila_color_type: string // 单色 / 渐变色 / 多拼色
-  fila_color_name: { en?: string; [lang: string]: string | undefined }
-  fila_color: string[]
-}
-
-function loadColorDB(): { entries: ColorDBEntry[]; refreshed: boolean } {
-  let refreshed = false
-  try {
-    execSync(`curl -sfL ${COLOR_DB_URL} -o ${COLOR_DB_PATH}.tmp`, { stdio: 'ignore' })
-    const tmp = JSON.parse(fs.readFileSync(`${COLOR_DB_PATH}.tmp`, 'utf8'))
-    // Validate shape before swapping in.
-    if (Array.isArray(tmp.data) && tmp.data.length > 0) {
-      fs.renameSync(`${COLOR_DB_PATH}.tmp`, COLOR_DB_PATH)
-      refreshed = true
-    } else {
-      fs.rmSync(`${COLOR_DB_PATH}.tmp`, { force: true })
-    }
-  } catch {
-    // Network unavailable in CI/local — fall back to the bundled snapshot.
-    fs.rmSync(`${COLOR_DB_PATH}.tmp`, { force: true })
-  }
-  const raw = JSON.parse(fs.readFileSync(COLOR_DB_PATH, 'utf8'))
-  const entries: ColorDBEntry[] = Array.isArray(raw.data) ? raw.data : Array.isArray(raw) ? raw : []
-  return { entries, refreshed }
-}
-
-/** Strip the alpha channel and uppercase: "#5B6579FF" -> "5B6579". */
-function normalizeHex(hex: string): string {
-  return hex.replace(/^#/, '').toUpperCase().slice(0, 6)
-}
-
-/**
- * The colour signature of a tag as a list of 6-digit RGB hex strings in the
- * order Bambu encodes them (primary first, then secondary). Two tags share a
- * signature iff they carry the same colours, so this is the key used to look
- * up the official name.
- */
-function tagColorSignature(tag: ParsedTag): string[] {
-  const sig = [normalizeHex(tag.color.primary.hex)]
-  if (tag.color.count >= 2 && tag.color.secondary) sig.push(normalizeHex(tag.color.secondary.hex))
-  return sig
-}
-
-const MULTI_COLOR_TYPES = new Set(['渐变色', '多拼色'])
-
-/**
- * Resolve the official colour name for a tag against the Bambu Studio DB.
- *
- * Strategy (ported from NickWaterton's colordb.lookup_color_name):
- *  1. Exact match — same colour signature AND same material (fila_type ==
- *     detailedFilamentType). This wins outright.
- *  2. Hex-only match in a compatible material — used as a fallback name so an
- *     unrecognised material still gets a sensible colour label.
- * Single-colour tags only consider 单色 entries; multi-colour tags only
- * consider 渐变色 / 多拼色, matching the colour-type filter colordb applies.
- */
-function lookupColorName(
-  tag: ParsedTag,
-  detailedType: string,
-  db: ColorDBEntry[],
-): { name: string; nameZh: string | null; exact: boolean } | null {
-  const sig = tagColorSignature(tag)
-  const wantMulti = tag.color.count >= 2
-  let hexOnly: { name: string; nameZh: string | null } | null = null
-
-  for (const entry of db) {
-    const isMulti = MULTI_COLOR_TYPES.has(entry.fila_color_type)
-    if (isMulti !== wantMulti) continue
-    const entrySig = entry.fila_color.map(normalizeHex)
-    if (entrySig.length !== sig.length) continue
-    if (entrySig.some((c, i) => c !== sig[i])) continue
-    // Colour signature matches.
-    if (entry.fila_type === detailedType && entry.fila_color_name.en) {
-      return { name: entry.fila_color_name.en, nameZh: entry.fila_color_name.zh ?? null, exact: true }
-    }
-    if (!hexOnly && entry.fila_color_name.en) {
-      hexOnly = { name: entry.fila_color_name.en, nameZh: entry.fila_color_name.zh ?? null }
-    }
-  }
-  return hexOnly ? { ...hexOnly, exact: false } : null
-}
-
 // --- Path fallback ---
 
 /**
@@ -299,7 +105,7 @@ function parsePathSegments(filePath: string): { category: string; material: stri
 
 // --- Main ---
 
-function main(): void {
+async function main(): Promise<void> {
   if (!fs.existsSync(LIBRARY_DIR)) {
     console.log('Cloning RFID library (shallow)...')
     execSync(`git clone --depth 1 ${REPO_URL} ${LIBRARY_DIR}`, { stdio: 'inherit' })
@@ -322,75 +128,83 @@ function main(): void {
   let invalidTrailers = 0
   let renamed = 0
   let reclassified = 0
-  let appExtrasAdded = 0
-  let appExtrasSkippedExisting = 0
-  let appExtrasSkipped = 0
+  let appSharedAdded = 0
+  let appSharedSkippedExisting = 0
+  let appSharedSkipped = 0
   const errors: { file: string; error: string }[] = []
   const combos = new Set<string>()
   let upstreamCombos = new Set<string>()
-  const comboKey = (material: string, color: string) => material + '\u0000' + color
 
   function ingest(
     data: Buffer,
     pathInfo: { category: string; material: string; color: string } | null,
-    extra: AppExtraDump | null = null,
+    appDump: AppSharedDump | null = null,
     newCombosOnly = false,
   ): boolean {
     if (data.length !== EXPECTED_DUMP_SIZE) {
       skipped++
-      if (extra) appExtrasSkipped++
+      if (appDump) appSharedSkipped++
       return false
     }
 
     const bytes = new Uint8Array(data)
     if (!isImportableBambuTag(bytes)) {
       invalidTrailers++
-      if (extra) appExtrasSkipped++
+      if (appDump) appSharedSkipped++
       return false
     }
 
     const tag = parseTagDump(bytes)
     if (!tag) {
       skipped++
-      if (extra) appExtrasSkipped++
+      if (appDump) appSharedSkipped++
       return false
     }
 
+    // The app library identifies colours by block 1 (material id + colour
+    // code) first; upstream dumps keep the RGB-based lookup.
+    const appEntry = appDump ? lookupAppColorName(tag, colorDB) : null
     const detailedType = canonicalizeDetailedType(tag.detailedFilamentType)
-    const extraMaterial = extra?.material ? canonicalizeDetailedType(extra.material) : ''
+    const appMaterial = appEntry?.fila_type ? canonicalizeDetailedType(appEntry.fila_type) : ''
 
-    // Resolve category: detailed type → short type → upstream directory → app hint.
+    // Resolve category: detailed type → app material → short type → directory.
     const category =
       DETAILED_TYPE_TO_CATEGORY[detailedType] ??
+      DETAILED_TYPE_TO_CATEGORY[appMaterial] ??
       FILAMENT_TYPE_TO_CATEGORY[tag.filamentType] ??
       pathInfo?.category ??
-      extra?.category ??
       null
-    // Resolve material: detailed type → app hint → upstream directory.
-    const material = detailedType || extraMaterial || pathInfo?.material || null
-    // Resolve colour: official DB → app hint → upstream directory.
-    const official = lookupColorName(tag, detailedType, colorDB)
-    const color = official?.name ?? extra?.color ?? pathInfo?.color ?? null
+    // Resolve material: detailed type → app material → short type → directory.
+    const material = detailedType || appMaterial || tag.filamentType || pathInfo?.material || null
+    // Resolve colour: app block-1 code → official DB → directory → raw hex.
+    const official = appEntry
+      ? {
+          name: appEntry.fila_color_name.en || '',
+          nameZh: appEntry.fila_color_name.zh ?? null,
+          exact: true,
+        }
+      : lookupColorName(tag, detailedType, colorDB)
+    const color = official?.name ?? pathInfo?.color ?? tag.color.primary.hex.toUpperCase()
 
     if (!category || !material || !color || !VALID_CATEGORIES.includes(category)) {
       skipped++
-      if (extra) appExtrasSkipped++
+      if (appDump) appSharedSkipped++
       return false
     }
 
-    // App extras only fill colour/material combinations the upstream lacks.
-    if (extra && !/^[\x20-\x7E]*[A-Za-z]/.test(material)) {
-      appExtrasSkipped++
+    // App dumps only fill colour/material combinations the upstream lacks.
+    if (appDump && !/^[\x20-\x7E]*[A-Za-z]/.test(material)) {
+      appSharedSkipped++
       return false
     }
     const key = comboKey(material, color)
     if (newCombosOnly && upstreamCombos.has(key)) {
-      appExtrasSkippedExisting++
+      appSharedSkippedExisting++
       return false
     }
 
     // Telemetry: how much did data-driven classification move things?
-    if (!extra) {
+    if (!appDump) {
       if (pathInfo && (pathInfo.category !== category || pathInfo.material !== material)) reclassified++
       if (pathInfo && pathInfo.color !== color) renamed++
     }
@@ -399,14 +213,14 @@ function main(): void {
     if (!categories[category].materials[material]) {
       categories[category].materials[material] = {
         displayName: material,
-        filamentType: tag.filamentType || extra?.materialType || '',
+        filamentType: tag.filamentType || appMaterial || '',
         colors: {},
       }
     }
     if (!categories[category].materials[material].colors[color]) {
       categories[category].materials[material].colors[color] = {
         displayName: color,
-        displayNameZh: official?.nameZh ?? extra?.colorZh ?? null,
+        displayNameZh: official?.nameZh ?? null,
         colorCSS: tag.color.primary.css,
         colorHex: tag.color.primary.hex,
         secondaryColorCSS: tag.color.secondary ? tag.color.secondary.css : null,
@@ -415,7 +229,7 @@ function main(): void {
     }
 
     categories[category].materials[material].colors[color].dumps.push({
-      uid: extra?.uid || tag.uid,
+      uid: appDump?.uid || tag.uid,
       spoolWeight: tag.spoolWeight,
       filamentLength: tag.filamentLength,
       diameter: tag.filamentDiameter,
@@ -446,20 +260,19 @@ function main(): void {
 
   upstreamCombos = new Set(combos)
 
-  const appExtras = loadAppExtras()
-  if (appExtras.length > 0) {
-    console.log(`App shared extras: ${appExtras.length} dumps from ${APP_EXTRA_PATH}`)
-    for (const extra of appExtras) {
+  // Download the current app library on every build; no snapshot is committed.
+  const appDumps = await loadAppSharedDumps({})
+  if (appDumps.length > 0) {
+    for (const dump of appDumps) {
       try {
-        const data = Buffer.from(extra.dumpBase64, 'base64')
-        if (ingest(data, null, extra, true)) appExtrasAdded++
+        if (ingest(Buffer.from(dump.data), null, dump, true)) appSharedAdded++
       } catch (e: any) {
-        errors.push({ file: `app-shared-extra:${extra.uid ?? '?'}`, error: e.message })
+        errors.push({ file: `app-shared:${dump.uid}`, error: e.message })
       }
     }
     console.log(
-      `App shared extras result: +${appExtrasAdded} dumps, ` +
-        `${appExtrasSkippedExisting} already covered, ${appExtrasSkipped} skipped`,
+      `App shared library result: +${appSharedAdded} dumps, ` +
+        `${appSharedSkippedExisting} covered by upstream, ${appSharedSkipped} skipped`,
     )
   }
 
@@ -502,7 +315,7 @@ function main(): void {
   console.log('  Renamed:            ' + renamed + ' (colour name resolved from official DB)')
   console.log('  Skipped:            ' + skipped)
   console.log('  Invalid trailers:   ' + invalidTrailers + ' (not 87878769 — would be rejected by import)')
-  console.log('  App extra dumps:    +' + appExtrasAdded + ' (' + appExtrasSkippedExisting + ' combos already covered, ' + appExtrasSkipped + ' skipped)')
+  console.log('  App shared dumps:   +' + appSharedAdded + ' (' + appSharedSkippedExisting + ' covered by upstream, ' + appSharedSkipped + ' skipped)')
   console.log('  Errors:             ' + errors.length)
   console.log('  Output:             ' + OUTPUT_FILE + ' (' + sizeMB + ' MB)')
 
@@ -518,4 +331,7 @@ function main(): void {
   }
 }
 
-main()
+main().catch(e => {
+  console.error(e)
+  process.exit(1)
+})
