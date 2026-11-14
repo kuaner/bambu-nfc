@@ -91,7 +91,8 @@ npm run generate-db
    `/api/public/tags/can-download` 和 `/api/public/tags/download/v2`；
 3. 在内存中解密 M0RF 包（PBKDF2-HMAC-SHA256 + AES-256-GCM），解压 `<UID>.txt`；
 4. 用与上游相同的解析、颜色识别和排序逻辑处理 App dump；
-5. 只补充 `(material, color)` 上游没有的组合，已有组合整组跳过。
+5. 只补充 `(material, color)` 上游没有的组合，已有组合整组跳过；
+6. App dump 的 UID 已存在于上游时也跳过，避免同一张卡同时挂在两个颜色名下。
 
 凭据放在 GitHub Actions Secrets：
 

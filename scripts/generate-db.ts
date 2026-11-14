@@ -131,8 +131,10 @@ async function main(): Promise<void> {
   let appSharedAdded = 0
   let appSharedSkippedExisting = 0
   let appSharedSkipped = 0
+  let appSharedDuplicateUid = 0
   const errors: { file: string; error: string }[] = []
   const combos = new Set<string>()
+  const seenUids = new Set<string>()
   let upstreamCombos = new Set<string>()
 
   function ingest(
@@ -245,6 +247,7 @@ async function main(): Promise<void> {
     })
 
     combos.add(key)
+    seenUids.add((appDump?.uid || tag.uid).toUpperCase())
     totalDumps++
     return true
   }
@@ -264,6 +267,10 @@ async function main(): Promise<void> {
   const appDumps = await loadAppSharedDumps({})
   if (appDumps.length > 0) {
     for (const dump of appDumps) {
+      if (seenUids.has(dump.uid.toUpperCase())) {
+        appSharedDuplicateUid++
+        continue
+      }
       try {
         if (ingest(Buffer.from(dump.data), null, dump, true)) appSharedAdded++
       } catch (e: any) {
@@ -272,6 +279,7 @@ async function main(): Promise<void> {
     }
     console.log(
       `App shared library result: +${appSharedAdded} dumps, ` +
+        `${appSharedDuplicateUid} duplicate UIDs, ` +
         `${appSharedSkippedExisting} covered by upstream, ${appSharedSkipped} skipped`,
     )
   }
@@ -315,7 +323,7 @@ async function main(): Promise<void> {
   console.log('  Renamed:            ' + renamed + ' (colour name resolved from official DB)')
   console.log('  Skipped:            ' + skipped)
   console.log('  Invalid trailers:   ' + invalidTrailers + ' (not 87878769 — would be rejected by import)')
-  console.log('  App shared dumps:   +' + appSharedAdded + ' (' + appSharedSkippedExisting + ' covered by upstream, ' + appSharedSkipped + ' skipped)')
+  console.log('  App shared dumps:   +' + appSharedAdded + ' (' + appSharedDuplicateUid + ' duplicate UIDs, ' + appSharedSkippedExisting + ' covered by upstream, ' + appSharedSkipped + ' skipped)')
   console.log('  Errors:             ' + errors.length)
   console.log('  Output:             ' + OUTPUT_FILE + ' (' + sizeMB + ' MB)')
 

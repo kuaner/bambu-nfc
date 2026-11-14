@@ -89,12 +89,12 @@
         }
       )
       if (result) {
-        if (writeStore.selectedCategory && writeStore.selectedMaterial && writeStore.selectedColorKey) {
-          writtenStore.mark(
-            writeStore.selectedCategory,
-            writeStore.selectedMaterial,
-            writeStore.selectedColorKey
-          )
+        const { selectedCategory, selectedMaterial, selectedColorKey, selectedDump } = writeStore
+        const colorKey = selectedColorKey ??
+          writeStore.colors.find(c => c.dumps.some(d => d.uid === selectedDump?.uid))?.name ??
+          null
+        if (selectedCategory && selectedMaterial && colorKey) {
+          writtenStore.mark(selectedCategory, selectedMaterial, colorKey)
         }
         writeStore.writeProgress = {
           current: WRITE_PROGRESS_TOTAL,
