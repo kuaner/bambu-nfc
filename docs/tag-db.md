@@ -78,3 +78,35 @@ npm run generate-db
 `PLA` `PETG` `ABS` `ASA` `PA` `PC` `TPU` `Support Material`
 
 库中的 `.bin` 文件路径格式：`Category/Material/Color/UID_dir/file.bin`，`*-key.bin` 会被跳过。路径仅作为回退依据，最终归类以标签数据 + 官方颜色库为准。
+
+## App 共享库补充（新颜色 / 材料）
+
+上游 RFID 库不包含所有市售颜色。`scripts/app-shared-extra.json` 是从 Android
+App（3DPrint-Filament-RFID-Tool）的在线共享标签库中提取的“上游还没有的颜色/材料
+组合”dump 快照。
+
+`generate-db` 的处理顺序：
+
+1. 扫描上游 `Bambu-Lab-RFID-Library`，按原有规则生成分类；
+2. 读取 `scripts/app-shared-extra.json`；
+3. 只补充 `(material, color)` 尚未出现的组合；上游已有的组合整组跳过，不重复添加；
+4. 补充的 dump 使用与上游相同的解析、颜色识别和排序逻辑。
+
+快照只保存新组合的 dump（base64），不是完整共享库，避免仓库和 PWA 包体膨胀。
+当前快照为上游补充 36 个颜色组合，其中 3 种是上游没有的材料：PLA Palette、
+Support for PA、TPU 95A。
+
+### 刷新快照
+
+1. 在 App 中下载共享标签库；
+2. 用 App 仓库的 `tools/bambu_tag_merge.py` 生成 `app_new_combo_dumps.json`：
+
+```bash
+python3 tools/bambu_tag_merge.py --mode to-nfc \
+  --source ../bambu-nfc/src/data/bambu-tags.json \
+  --app-zip /path/to/decrypted_shared_library.zip \
+  --out-dir tools/out-online
+```
+
+3. 用 `tools/out-online/app_new_combo_dumps.json` 覆盖
+   `bambu-nfc/scripts/app-shared-extra.json`，再运行 `npm run generate-db` 验证。

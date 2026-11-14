@@ -19,7 +19,7 @@ export default defineConfig({
       registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
-        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
       },
       manifest: {
         name: 'Bambu NFC Writer',

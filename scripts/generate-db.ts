@@ -12,6 +12,11 @@
  * at build time so the emitted database stays aligned with official Bambu
  * naming without depending on a cleaned upstream fork.
  *
+ * After the upstream scan, `scripts/app-shared-extra.json` is merged in. That
+ * snapshot carries dumps from the Android app's shared tag library for
+ * material/colour pairs the upstream library does not have; existing pairs are
+ * skipped so the upstream stays authoritative. See docs/tag-db.md.
+ *
  * Usage: node scripts/generate-db.js [library-path] [output-path]
  *   library-path: path to bambu-rfid-library (default: ./bambu-rfid-library)
  *   output-path:  path to output JSON file (default: ./src/data/bambu-tags.json)
@@ -37,6 +42,30 @@ const COLOR_DB_URL =
   'https://raw.githubusercontent.com/bambulab/BambuStudio/master/resources/profiles/BBL/filament/filaments_color_codes.json'
 /** Bundled snapshot, refreshed from COLOR_DB_URL on each run when the network is available. */
 const COLOR_DB_PATH = path.join(__dirname, 'bambu-color-db.json')
+
+/** New-colour dump snapshot extracted from the Android app's shared library. */
+const APP_EXTRA_PATH = path.join(__dirname, 'app-shared-extra.json')
+
+interface AppExtraDump {
+  uid?: string
+  dumpBase64: string
+  category?: string
+  material?: string
+  color?: string
+  colorZh?: string
+  materialType?: string
+}
+
+function loadAppExtras(): AppExtraDump[] {
+  try {
+    if (!fs.existsSync(APP_EXTRA_PATH)) return []
+    const raw = JSON.parse(fs.readFileSync(APP_EXTRA_PATH, 'utf8'))
+    return Array.isArray(raw.dumps) ? raw.dumps : []
+  } catch (e: any) {
+    console.warn(`App shared extras ignored (${APP_EXTRA_PATH}): ${e.message}`)
+    return []
+  }
+}
 
 // --- Directory scanning ---
 
@@ -150,7 +179,7 @@ for (const m of [
   'PLA Aero', 'PLA Basic', 'PLA Galaxy', 'PLA Glow', 'PLA Lite', 'PLA Marble',
   'PLA Matte', 'PLA Metal', 'PLA Pure', 'PLA Silk', 'PLA Silk+', 'PLA Sparkle',
   'PLA Tough', 'PLA Tough+', 'PLA Translucent', 'PLA Wood', 'PLA Dynamic',
-  'PLA-CF',
+  'PLA-CF', 'PLA Palette',
 ]) registerDetailedType(m, 'PLA')
 for (const m of ['PETG Basic', 'PETG HF', 'PETG Translucent', 'PETG Matte', 'PETG-CF']) registerDetailedType(m, 'PETG')
 for (const m of ['ABS', 'ABS-GF']) registerDetailedType(m, 'ABS')
@@ -161,7 +190,7 @@ for (const m of ['PA6-GF', 'PA6-CF', 'PAHT-CF', 'PA-CF']) registerDetailedType(m
 for (const m of ['TPU for AMS', 'TPU 95A HF', 'TPU 95A', 'TPU 90A', 'TPU 85A']) registerDetailedType(m, 'TPU')
 for (const m of [
   'Support for PLA', 'Support for PLA/PETG', 'Support for PA/PET', 'Support for ABS',
-  'Support G', 'Support W', 'Support For PA', 'PVA',
+  'Support G', 'Support W', 'Support For PA', 'Support for PA', 'PVA',
 ]) registerDetailedType(m, 'Support Material')
 
 // --- Official colour database ---
@@ -293,80 +322,145 @@ function main(): void {
   let invalidTrailers = 0
   let renamed = 0
   let reclassified = 0
+  let appExtrasAdded = 0
+  let appExtrasSkippedExisting = 0
+  let appExtrasSkipped = 0
   const errors: { file: string; error: string }[] = []
+  const combos = new Set<string>()
+  let upstreamCombos = new Set<string>()
+  const comboKey = (material: string, color: string) => material + '\u0000' + color
+
+  function ingest(
+    data: Buffer,
+    pathInfo: { category: string; material: string; color: string } | null,
+    extra: AppExtraDump | null = null,
+    newCombosOnly = false,
+  ): boolean {
+    if (data.length !== EXPECTED_DUMP_SIZE) {
+      skipped++
+      if (extra) appExtrasSkipped++
+      return false
+    }
+
+    const bytes = new Uint8Array(data)
+    if (!isImportableBambuTag(bytes)) {
+      invalidTrailers++
+      if (extra) appExtrasSkipped++
+      return false
+    }
+
+    const tag = parseTagDump(bytes)
+    if (!tag) {
+      skipped++
+      if (extra) appExtrasSkipped++
+      return false
+    }
+
+    const detailedType = canonicalizeDetailedType(tag.detailedFilamentType)
+    const extraMaterial = extra?.material ? canonicalizeDetailedType(extra.material) : ''
+
+    // Resolve category: detailed type → short type → upstream directory → app hint.
+    const category =
+      DETAILED_TYPE_TO_CATEGORY[detailedType] ??
+      FILAMENT_TYPE_TO_CATEGORY[tag.filamentType] ??
+      pathInfo?.category ??
+      extra?.category ??
+      null
+    // Resolve material: detailed type → app hint → upstream directory.
+    const material = detailedType || extraMaterial || pathInfo?.material || null
+    // Resolve colour: official DB → app hint → upstream directory.
+    const official = lookupColorName(tag, detailedType, colorDB)
+    const color = official?.name ?? extra?.color ?? pathInfo?.color ?? null
+
+    if (!category || !material || !color || !VALID_CATEGORIES.includes(category)) {
+      skipped++
+      if (extra) appExtrasSkipped++
+      return false
+    }
+
+    // App extras only fill colour/material combinations the upstream lacks.
+    if (extra && !/^[\x20-\x7E]*[A-Za-z]/.test(material)) {
+      appExtrasSkipped++
+      return false
+    }
+    const key = comboKey(material, color)
+    if (newCombosOnly && upstreamCombos.has(key)) {
+      appExtrasSkippedExisting++
+      return false
+    }
+
+    // Telemetry: how much did data-driven classification move things?
+    if (!extra) {
+      if (pathInfo && (pathInfo.category !== category || pathInfo.material !== material)) reclassified++
+      if (pathInfo && pathInfo.color !== color) renamed++
+    }
+
+    if (!categories[category]) categories[category] = { materials: {} }
+    if (!categories[category].materials[material]) {
+      categories[category].materials[material] = {
+        displayName: material,
+        filamentType: tag.filamentType || extra?.materialType || '',
+        colors: {},
+      }
+    }
+    if (!categories[category].materials[material].colors[color]) {
+      categories[category].materials[material].colors[color] = {
+        displayName: color,
+        displayNameZh: official?.nameZh ?? extra?.colorZh ?? null,
+        colorCSS: tag.color.primary.css,
+        colorHex: tag.color.primary.hex,
+        secondaryColorCSS: tag.color.secondary ? tag.color.secondary.css : null,
+        dumps: [],
+      }
+    }
+
+    categories[category].materials[material].colors[color].dumps.push({
+      uid: extra?.uid || tag.uid,
+      spoolWeight: tag.spoolWeight,
+      filamentLength: tag.filamentLength,
+      diameter: tag.filamentDiameter,
+      nozzleDiameter: tag.nozzleDiameter,
+      temps: {
+        drying: tag.temperatures.dryingTemp,
+        dryingTime: tag.temperatures.dryingTime,
+        bed: tag.temperatures.bedTemp,
+        hotendMin: tag.temperatures.hotendMin,
+        hotendMax: tag.temperatures.hotendMax,
+      },
+      dumpBase64: data.toString('base64'),
+    })
+
+    combos.add(key)
+    totalDumps++
+    return true
+  }
 
   for (const filePath of binFiles) {
     try {
       const data = fs.readFileSync(filePath)
-      if (data.length !== EXPECTED_DUMP_SIZE) { skipped++; continue }
-
-      const bytes = new Uint8Array(data)
-      if (!isImportableBambuTag(bytes)) { invalidTrailers++; continue }
-
-      const tag = parseTagDump(bytes)
-      if (!tag) { skipped++; continue }
-
-      const pathInfo = parsePathSegments(filePath)
-      const detailedType = canonicalizeDetailedType(tag.detailedFilamentType)
-
-      // Resolve category: detailed type → short type → directory.
-      let category =
-        DETAILED_TYPE_TO_CATEGORY[detailedType] ??
-        FILAMENT_TYPE_TO_CATEGORY[tag.filamentType] ??
-        pathInfo?.category ??
-        null
-      // Resolve material: detailed type → directory.
-      let material = detailedType || pathInfo?.material || null
-      // Resolve colour: official DB → directory.
-      const official = lookupColorName(tag, detailedType, colorDB)
-      let color = official?.name ?? pathInfo?.color ?? null
-
-      if (!category || !material || !color) { skipped++; continue }
-      if (!VALID_CATEGORIES.includes(category)) { skipped++; continue }
-
-      // Telemetry: how much did data-driven classification move things?
-      if (pathInfo && (pathInfo.category !== category || pathInfo.material !== material)) reclassified++
-      if (pathInfo && pathInfo.color !== color) renamed++
-
-      if (!categories[category]) categories[category] = { materials: {} }
-      if (!categories[category].materials[material]) {
-        categories[category].materials[material] = {
-          displayName: material,
-          filamentType: tag.filamentType,
-          colors: {},
-        }
-      }
-      if (!categories[category].materials[material].colors[color]) {
-        categories[category].materials[material].colors[color] = {
-          displayName: color,
-          displayNameZh: official?.nameZh ?? null,
-          colorCSS: tag.color.primary.css,
-          colorHex: tag.color.primary.hex,
-          secondaryColorCSS: tag.color.secondary ? tag.color.secondary.css : null,
-          dumps: [],
-        }
-      }
-
-      categories[category].materials[material].colors[color].dumps.push({
-        uid: tag.uid,
-        spoolWeight: tag.spoolWeight,
-        filamentLength: tag.filamentLength,
-        diameter: tag.filamentDiameter,
-        nozzleDiameter: tag.nozzleDiameter,
-        temps: {
-          drying: tag.temperatures.dryingTemp,
-          dryingTime: tag.temperatures.dryingTime,
-          bed: tag.temperatures.bedTemp,
-          hotendMin: tag.temperatures.hotendMin,
-          hotendMax: tag.temperatures.hotendMax,
-        },
-        dumpBase64: data.toString('base64'),
-      })
-
-      totalDumps++
+      ingest(data, parsePathSegments(filePath))
     } catch (e: any) {
       errors.push({ file: filePath, error: e.message })
     }
+  }
+
+  upstreamCombos = new Set(combos)
+
+  const appExtras = loadAppExtras()
+  if (appExtras.length > 0) {
+    console.log(`App shared extras: ${appExtras.length} dumps from ${APP_EXTRA_PATH}`)
+    for (const extra of appExtras) {
+      try {
+        const data = Buffer.from(extra.dumpBase64, 'base64')
+        if (ingest(data, null, extra, true)) appExtrasAdded++
+      } catch (e: any) {
+        errors.push({ file: `app-shared-extra:${extra.uid ?? '?'}`, error: e.message })
+      }
+    }
+    console.log(
+      `App shared extras result: +${appExtrasAdded} dumps, ` +
+        `${appExtrasSkippedExisting} already covered, ${appExtrasSkipped} skipped`,
+    )
   }
 
   // Sort
@@ -408,6 +502,7 @@ function main(): void {
   console.log('  Renamed:            ' + renamed + ' (colour name resolved from official DB)')
   console.log('  Skipped:            ' + skipped)
   console.log('  Invalid trailers:   ' + invalidTrailers + ' (not 87878769 — would be rejected by import)')
+  console.log('  App extra dumps:    +' + appExtrasAdded + ' (' + appExtrasSkippedExisting + ' combos already covered, ' + appExtrasSkipped + ' skipped)')
   console.log('  Errors:             ' + errors.length)
   console.log('  Output:             ' + OUTPUT_FILE + ' (' + sizeMB + ' MB)')
 
